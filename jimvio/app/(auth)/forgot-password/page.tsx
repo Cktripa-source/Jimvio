@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
         <h2 className="text-2xl font-bold text-white mb-3">Email sent!</h2>
         <p className="text-white/60 mb-6">{success}</p>
         <Link href="/login">
-          <Button className="w-full" variant="glass" size="lg">
+          <Button className="w-full" variant="outline" size="lg">
             <ArrowLeft className="h-4 w-4" /> Back to Sign In
           </Button>
         </Link>

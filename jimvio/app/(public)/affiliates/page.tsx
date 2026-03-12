@@ -51,7 +51,7 @@ export default function AffiliatesPage() {
                 Start Earning Free <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
-            <Button size="xl" variant="glass" asChild>
+            <Button size="xl" variant="outline" asChild>
               <Link href="/marketplace">Browse Products</Link>
             </Button>
           </div>

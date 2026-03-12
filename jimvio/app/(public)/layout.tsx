@@ -3,17 +3,31 @@ import { Footer } from "@/components/layout/footer";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
   let profile = null;
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("email, full_name, avatar_url")
-      .eq("id", user.id)
-      .single();
-    profile = data;
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      profile = data;
+
+      // If profile doesn't exist in DB (tables not created yet), use auth user data
+      if (!profile && user.email) {
+        profile = {
+          email: user.email,
+          full_name: user.user_metadata?.full_name || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+        };
+      }
+    }
+  } catch {
+    // Silently handle DB not set up yet
   }
 
   return (

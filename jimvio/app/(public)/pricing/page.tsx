@@ -114,8 +114,7 @@ export default function PricingPage() {
           {plans.map((plan, i) => (
             <Card
               key={plan.name}
-              className={`relative ${plan.badge ? "border-brand-500/40 shadow-brand" : ""}`}
-              gradient={i === 1}
+              className={`relative ${i === 1 ? "ring-2 ring-primary-500/30" : ""}`}
             >
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -154,7 +153,7 @@ export default function PricingPage() {
                   )}
                 </div>
 
-                <Button className="w-full mb-6" variant={i === 1 ? "default" : "glass"} size="lg" asChild>
+                <Button className="w-full mb-6" variant={i === 1 ? "default" : "outline"} size="lg" asChild>
                   <Link href="/register">
                     {plan.cta} <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -181,7 +180,7 @@ export default function PricingPage() {
           <h2 className="text-3xl font-black text-white text-center mb-10">Frequently Asked Questions</h2>
           <div className="space-y-4">
             {faqs.map((faq, i) => (
-              <div key={i} className="glass-card p-5">
+              <div key={i} className="bg-surface rounded-2xl border border-base shadow-card p-5">
                 <h3 className="text-white font-semibold mb-2">{faq.q}</h3>
                 <p className="text-white/60 text-sm leading-relaxed">{faq.a}</p>
               </div>
