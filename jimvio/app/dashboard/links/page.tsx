@@ -1,162 +1,247 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { RevenueChart } from "@/components/charts/revenue-chart";
-import React from "react";
-import Link from "next/link";
-import { Link2, Plus, Copy, TrendingUp, DollarSign, MousePointer, ShoppingCart, ExternalLink, MoreHorizontal } from "lucide-react";
+
+import React, { useEffect, useState } from "react";
+import { Link2, Plus, Copy, TrendingUp, DollarSign, MousePointer, ShoppingCart, ExternalLink, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
-import { Progress } from "@/components/ui/progress";
+import { RevenueChart } from "@/components/charts/revenue-chart";
 import { formatCurrency } from "@/lib/utils";
-
-const mockLinks = [
-  { id: "1", product: "iPhone 15 Pro Max", code: "LNK-A8B2C3D4", clicks: 4820, conversions: 142, earnings: 1207000, rate: 8, ctr: 2.9, status: "active" },
-  { id: "2", product: "Next.js 15 Course", code: "LNK-E5F6G7H8", clicks: 12400, conversions: 892, earnings: 2007000, rate: 10, ctr: 7.2, status: "active" },
-  { id: "3", product: "Premium UI Kit", code: "LNK-I9J1K2L3", clicks: 28700, conversions: 2103, earnings: 1841250, rate: 15, ctr: 7.3, status: "active" },
-  { id: "4", product: "AI Automation Bundle", code: "LNK-M4N5O6P7", clicks: 9300, conversions: 567, earnings: 1276875, rate: 10, ctr: 6.1, status: "active" },
-  { id: "5", product: "Python ML Bootcamp", code: "LNK-Q8R9S1T2", clicks: 6200, conversions: 310, earnings: 806300, rate: 8, ctr: 5.0, status: "paused" },
-];
-
-const clickData = [
-  { month: "Jan", revenue: 42000, orders: 820, affiliate: 0 },
-  { month: "Feb", revenue: 38000, orders: 740, affiliate: 0 },
-  { month: "Mar", revenue: 59000, orders: 1100, affiliate: 0 },
-  { month: "Apr", revenue: 71000, orders: 1380, affiliate: 0 },
-  { month: "May", revenue: 65000, orders: 1260, affiliate: 0 },
-  { month: "Jun", revenue: 88000, orders: 1720, affiliate: 0 },
-  { month: "Jul", revenue: 76000, orders: 1480, affiliate: 0 },
-  { month: "Aug", revenue: 92000, orders: 1810, affiliate: 0 },
-];
+import { createClient } from "@/lib/supabase/client";
+import { TableRowSkeleton } from "@/components/ui/skeleton";
 
 export default function AffiliateLinksPage() {
+  const [affiliate, setAffiliate]   = useState<Record<string, unknown> | null>(null);
+  const [links, setLinks]           = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [copied, setCopied]         = useState<string | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newUrl, setNewUrl]         = useState("");
+  const [newRate, setNewRate]       = useState("10");
+  const [creating, setCreating]     = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: aff } = await supabase.from("affiliates").select("*").eq("user_id", user.id).single();
+      setAffiliate(aff);
+
+      if (aff) {
+        const { data: lnks } = await supabase
+          .from("affiliate_links")
+          .select(`
+            id, link_code, destination_url, commission_rate, is_active,
+            total_clicks, unique_clicks, total_conversions, total_earnings, created_at,
+            products ( id, name, slug, price )
+          `)
+          .eq("affiliate_id", aff.id)
+          .order("created_at", { ascending: false });
+        setLinks(lnks ?? []);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  async function activateAffiliate() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from("affiliates").insert({ user_id: user.id }).select().single();
+    if (data) setAffiliate(data);
+  }
+
+  async function createLink() {
+    if (!affiliate || !newUrl) return;
+    setCreating(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.from("affiliate_links").insert({
+      affiliate_id:    affiliate.id,
+      destination_url: newUrl,
+      commission_rate: parseFloat(newRate) || 10,
+    }).select(`
+      id, link_code, destination_url, commission_rate, is_active,
+      total_clicks, unique_clicks, total_conversions, total_earnings, created_at,
+      products ( id, name, slug, price )
+    `).single();
+
+    if (!error && data) {
+      setLinks(prev => [data, ...prev]);
+      setNewUrl("");
+      setShowNewForm(false);
+    }
+    setCreating(false);
+  }
+
+  function copyLink(code: string) {
+    const url = `${window.location.origin}/ref/${code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(code);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  const totalClicks  = links.reduce((s, l) => s + (l.total_clicks as number ?? 0), 0);
+  const totalConvs   = links.reduce((s, l) => s + (l.total_conversions as number ?? 0), 0);
+  const totalEarnings= links.reduce((s, l) => s + Number(l.total_earnings ?? 0), 0);
+  const avgCtr       = totalClicks > 0 ? ((totalConvs / totalClicks) * 100).toFixed(1) : "0.0";
+
+  if (!loading && !affiliate) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-base">Affiliate Links</h1>
+        <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+          <div className="text-4xl mb-3">🔗</div>
+          <h3 className="text-lg font-bold text-base mb-2">Activate Affiliate Role</h3>
+          <p className="text-sm text-muted-c mb-4">Start earning commissions by promoting products on Jimvio.</p>
+          <Button onClick={activateAffiliate}>Activate Affiliate Role</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white">Affiliate Links</h1>
-          <p className="text-white/50 text-sm mt-1">Generate and manage your affiliate links</p>
+          <h1 className="text-2xl font-bold text-base">Affiliate Links</h1>
+          <p className="text-sm text-muted-c mt-0.5">
+            Your code: <code className="text-xs bg-subtle border border-base px-2 py-0.5 rounded-lg text-primary-700 dark:text-primary-300">
+              {affiliate?.affiliate_code as string ?? "—"}
+            </code>
+          </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewForm(true)}>
           <Plus className="h-4 w-4" /> Create Link
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Clicks" value="61,420" change={22.4} icon={<MousePointer className="h-4 w-4" />} iconColor="from-brand-600 to-accent-600" />
-        <StatCard title="Conversions" value="4,014" change={18.9} icon={<ShoppingCart className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
-        <StatCard title="Total Earnings" value="RWF 7.1M" change={31.2} icon={<DollarSign className="h-4 w-4" />} iconColor="from-amber-600 to-orange-600" />
-        <StatCard title="Avg CTR" value="6.5%" change={4.1} icon={<TrendingUp className="h-4 w-4" />} iconColor="from-pink-600 to-rose-600" />
+        <StatCard title="Total Clicks"    value={loading ? "—" : totalClicks.toLocaleString()}  change={22.4} icon={<MousePointer className="h-4 w-4" />} iconColor="from-primary-600 to-accent-600" />
+        <StatCard title="Conversions"     value={loading ? "—" : totalConvs.toLocaleString()}   change={18.9} icon={<ShoppingCart className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
+        <StatCard title="Total Earnings"  value={loading ? "—" : formatCurrency(totalEarnings)} change={31.2} icon={<DollarSign  className="h-4 w-4" />} iconColor="from-amber-600 to-orange-600" />
+        <StatCard title="Avg CTR"         value={loading ? "—" : `${avgCtr}%`}                  change={4.1}  icon={<TrendingUp  className="h-4 w-4" />} iconColor="from-blue-600 to-cyan-600" />
       </div>
 
-      {/* Clicks Chart */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle>Clicks & Earnings Over Time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RevenueChart data={clickData} type="area" dataKey="orders" height={240} />
-          </CardContent>
-        </Card>
-
+      {/* Create Link Form */}
+      {showNewForm && (
         <Card>
-          <CardHeader><CardTitle>Earnings Breakdown</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Create New Affiliate Link</CardTitle></CardHeader>
+          <CardContent className="px-5 pb-5 pt-0 space-y-4">
             <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-white/60">Available</span>
-                <span className="text-xs font-bold text-emerald-400">RWF 4.2M</span>
-              </div>
-              <Progress value={59} indicatorClassName="bg-gradient-to-r from-emerald-500 to-teal-500" />
+              <label className="text-sm font-medium text-base block mb-1.5">Destination URL</label>
+              <input
+                type="url"
+                value={newUrl}
+                onChange={e => setNewUrl(e.target.value)}
+                placeholder="https://jimvio.com/marketplace/product-slug"
+                className="w-full h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+              />
             </div>
             <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-white/60">Pending</span>
-                <span className="text-xs font-bold text-amber-400">RWF 1.8M</span>
-              </div>
-              <Progress value={25} indicatorClassName="bg-gradient-to-r from-amber-500 to-orange-500" />
+              <label className="text-sm font-medium text-base block mb-1.5">Commission Rate (%)</label>
+              <input
+                type="number"
+                value={newRate}
+                onChange={e => setNewRate(e.target.value)}
+                min="1" max="90"
+                className="w-32 h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+              />
             </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-white/60">Paid Out</span>
-                <span className="text-xs font-bold text-white/60">RWF 1.1M</span>
-              </div>
-              <Progress value={16} indicatorClassName="bg-gradient-to-r from-slate-500 to-slate-600" />
-            </div>
-            <div className="pt-3 border-t border-white/10">
-              <Button className="w-full" size="sm">
-                <DollarSign className="h-4 w-4" /> Withdraw Earnings
-              </Button>
+            <div className="flex gap-3">
+              <Button onClick={createLink} loading={creating}><Link2 className="h-4 w-4" /> Generate Link</Button>
+              <Button variant="outline" onClick={() => setShowNewForm(false)}>Cancel</Button>
             </div>
           </CardContent>
         </Card>
-      </div>
+      )}
 
       {/* Links Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pt-5 px-5 pb-4">
           <div className="flex items-center justify-between">
             <CardTitle>My Affiliate Links</CardTitle>
-            <Badge variant="secondary">{mockLinks.length} links</Badge>
+            <Badge variant="secondary">{links.length} links</Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="table-base">
               <thead>
-                <tr className="border-b border-white/5">
-                  {["Product", "Link Code", "Clicks", "Conversions", "CTR", "Earnings", "Status", ""].map((h) => (
-                    <th key={h} className="text-left text-xs font-semibold text-white/40 px-5 py-3 uppercase tracking-wider">{h}</th>
-                  ))}
+                <tr>
+                  <th className="pl-5">Product / URL</th>
+                  <th>Link Code</th>
+                  <th className="text-right">Clicks</th>
+                  <th className="text-right">Conv.</th>
+                  <th className="text-right">Earnings</th>
+                  <th className="text-center">Status</th>
+                  <th className="pr-5" />
                 </tr>
               </thead>
               <tbody>
-                {mockLinks.map((link) => (
-                  <tr key={link.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-all group">
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-white">{link.product}</p>
-                      <p className="text-xs text-white/30 mt-0.5">{link.rate}% commission</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-brand-400 bg-brand-500/10 px-2 py-1 rounded-lg">{link.code}</span>
-                        <button className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-white/10 transition-all text-white/50 hover:text-white">
-                          <Copy className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-sm text-white">{link.clicks.toLocaleString()}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-sm text-white">{link.conversions.toLocaleString()}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-semibold text-emerald-400">{link.ctr}%</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-bold text-white">{formatCurrency(link.earnings)}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <Badge variant={link.status === "active" ? "success" : "warning"}>
-                        {link.status === "active" ? "Active" : "Paused"}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon-sm" variant="ghost">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon-sm" variant="ghost">
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {loading
+                  ? Array(3).fill(0).map((_, i) => <TableRowSkeleton key={i} cols={7} />)
+                  : links.length === 0
+                  ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-16 text-muted-c">
+                        <div className="text-3xl mb-2">🔗</div>
+                        <p className="font-medium text-base mb-1">No links yet</p>
+                        <p className="text-sm">Create your first affiliate link to start earning.</p>
+                      </td>
+                    </tr>
+                  )
+                  : links.map((l) => {
+                    const product = l.products as Record<string, unknown> | null;
+                    const isCopied = copied === l.link_code;
+                    return (
+                      <tr key={l.id as string} className="group">
+                        <td className="pl-5">
+                          <p className="text-sm font-medium text-base">
+                            {product?.name as string ?? "Custom Link"}
+                          </p>
+                          <p className="text-xs text-muted-c truncate max-w-[200px]">
+                            {(l.destination_url as string)?.replace("https://", "")}
+                          </p>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs font-mono bg-subtle border border-base text-primary-700 dark:text-primary-300 px-2 py-1 rounded-lg">
+                              {l.link_code as string}
+                            </code>
+                            <button
+                              onClick={() => copyLink(l.link_code as string)}
+                              className="btn btn-ghost btn-icon-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Copy link"
+                            >
+                              {isCopied ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="text-right"><span className="text-sm text-base">{((l.total_clicks as number) ?? 0).toLocaleString()}</span></td>
+                        <td className="text-right"><span className="text-sm text-base">{((l.total_conversions as number) ?? 0).toLocaleString()}</span></td>
+                        <td className="text-right"><span className="text-sm font-bold text-base">{formatCurrency(Number(l.total_earnings ?? 0))}</span></td>
+                        <td className="text-center">
+                          <Badge variant={l.is_active ? "success" : "warning"}>
+                            {l.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="pr-5">
+                          <a href={l.destination_url as string} target="_blank" rel="noopener noreferrer"
+                            className="btn btn-ghost btn-icon-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })
+                }
               </tbody>
             </table>
           </div>

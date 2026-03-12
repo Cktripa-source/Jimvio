@@ -1,245 +1,353 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { RevenueChart } from "@/components/charts/revenue-chart";
+
 import React from "react";
+import Link from "next/link";
 import {
-  DollarSign, ShoppingCart, Users, TrendingUp, Package,
-  ArrowRight, Star, Eye, Link2, Zap, Clock, CheckCircle
+  DollarSign, ShoppingCart, Package, TrendingUp,
+  ArrowRight, Link2, Zap, Plus, BarChart3, Star
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
-import { Progress } from "@/components/ui/progress";
-import Link from "next/link";
+import { RevenueChart } from "@/components/charts/revenue-chart";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+import { formatCurrency } from "@/lib/utils";
 
-const recentOrders = [
-  { id: "JV-A8B2C3", customer: "Alice Uwimana", amount: 85000, status: "delivered", product: "iPhone 15 Pro", time: "2h ago" },
-  { id: "JV-D4E5F6", customer: "Bob Nzabahimana", amount: 45000, status: "processing", product: "Next.js Course", time: "4h ago" },
-  { id: "JV-G7H8I9", customer: "Claire Mukamana", amount: 35000, status: "confirmed", product: "UI Kit Bundle", time: "6h ago" },
-  { id: "JV-J1K2L3", customer: "David Habimana", amount: 620000, status: "shipped", product: "Samsung 65\" TV", time: "8h ago" },
-  { id: "JV-M4N5O6", customer: "Emma Karangwa", amount: 12000, status: "pending", product: "Coffee Premium", time: "12h ago" },
-];
-
-const statusConfig = {
-  pending: { label: "Pending", variant: "warning" as const },
-  confirmed: { label: "Confirmed", variant: "default" as const },
-  processing: { label: "Processing", variant: "default" as const },
-  shipped: { label: "Shipped", variant: "success" as const },
-  delivered: { label: "Delivered", variant: "success" as const },
+const statusMap: Record<string, { label: string; variant: "success" | "warning" | "secondary" | "accent" | "default" }> = {
+  pending:    { label: "Pending",    variant: "warning" },
+  confirmed:  { label: "Confirmed",  variant: "accent"  },
+  processing: { label: "Processing", variant: "default" },
+  shipped:    { label: "Shipped",    variant: "accent"  },
+  delivered:  { label: "Delivered",  variant: "success" },
+  cancelled:  { label: "Cancelled",  variant: "secondary" },
 };
 
-const topProducts = [
-  { name: "iPhone 15 Pro Max", sales: 124, revenue: 105400000, progress: 87 },
-  { name: "Next.js 15 Mastery", sales: 892, revenue: 40140000, progress: 72 },
-  { name: "Premium UI Kit", sales: 2103, revenue: 73605000, progress: 95 },
-  { name: "AI Automation Bundle", sales: 567, revenue: 42525000, progress: 65 },
-];
-
 export default function DashboardPage() {
+  const [profile, setProfile]         = useState<Record<string, unknown> | null>(null);
+  const [vendor, setVendor]           = useState<Record<string, unknown> | null>(null);
+  const [stats, setStats]             = useState({ totalRevenue: 0, totalOrders: 0, activeProducts: 0, monthlyRevenue: 0 });
+  const [recentOrders, setRecentOrders] = useState<Record<string, unknown>[]>([]);
+  const [topProducts, setTopProducts] = useState<Record<string, unknown>[]>([]);
+  const [chartData, setChartData]     = useState<{ month: string; revenue: number; orders: number; affiliate: number }[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [wallet, setWallet]           = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load profile
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("*, user_roles(*)")
+        .eq("id", user.id)
+        .single();
+      setProfile(prof);
+
+      // Load wallet
+      const { data: wal } = await supabase.from("wallets").select("*").eq("user_id", user.id).single();
+      setWallet(wal);
+
+      // Load vendor if exists
+      const { data: vend } = await supabase.from("vendors").select("*").eq("user_id", user.id).single();
+      setVendor(vend);
+
+      if (vend) {
+        // Load vendor stats
+        const now  = new Date();
+        const mo30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const [productsRes, ordersRes, allOrdersRes] = await Promise.all([
+          supabase.from("products").select("id, status").eq("vendor_id", vend.id).eq("is_active", true),
+          supabase.from("order_items").select("total_price, created_at").eq("vendor_id", vend.id).gte("created_at", mo30),
+          supabase.from("orders")
+            .select("id, order_number, status, total_amount, currency, created_at, profiles(full_name, email), order_items!inner(product_name, vendor_id)")
+            .eq("order_items.vendor_id", vend.id)
+            .order("created_at", { ascending: false })
+            .limit(5),
+        ]);
+
+        const active  = productsRes.data?.filter(p => p.status === "active").length ?? 0;
+        const monthly = ordersRes.data?.reduce((s, o) => s + Number(o.total_price), 0) ?? 0;
+
+        setStats({
+          totalRevenue:    Number(vend.total_revenue ?? 0),
+          totalOrders:     vend.total_sales ?? 0,
+          activeProducts:  active,
+          monthlyRevenue:  monthly,
+        });
+
+        setRecentOrders(allOrdersRes.data ?? []);
+
+        // Top products
+        const { data: topP } = await supabase
+          .from("products")
+          .select("id, name, sale_count, price, rating")
+          .eq("vendor_id", vend.id)
+          .eq("is_active", true)
+          .order("sale_count", { ascending: false })
+          .limit(4);
+        setTopProducts(topP ?? []);
+
+        // Chart data — group revenue by month
+        const { data: chartItems } = await supabase
+          .from("order_items")
+          .select("total_price, created_at")
+          .eq("vendor_id", vend.id)
+          .gte("created_at", new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString());
+
+        const months = Array.from({ length: 12 }, (_, i) => {
+          const d = new Date(); d.setMonth(d.getMonth() - (11 - i));
+          return { month: d.toLocaleString("default", { month: "short" }), key: `${d.getFullYear()}-${d.getMonth() + 1}`, revenue: 0, orders: 0, affiliate: 0 };
+        });
+        chartItems?.forEach(item => {
+          const d   = new Date(item.created_at);
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+          const m   = months.find(x => x.key === key);
+          if (m) { m.revenue += Number(item.total_price); m.orders++; }
+        });
+        setChartData(months);
+      } else {
+        // Buyer dashboard: load orders
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("id, order_number, status, total_amount, currency, created_at, order_items(product_name, quantity)")
+          .eq("buyer_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        setRecentOrders(orders ?? []);
+      }
+
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const userName = (profile?.full_name as string)?.split(" ")[0] ?? "there";
+  const hour     = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="h-8 w-64 bg-muted rounded-xl animate-pulse" />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />)}
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div className="xl:col-span-2 h-80 bg-muted rounded-2xl animate-pulse" />
+          <div className="h-80 bg-muted rounded-2xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white">Good morning, Jean-Pierre 👋</h1>
-          <p className="text-white/50 text-sm mt-1">Here&apos;s what&apos;s happening with your store today.</p>
+          <h1 className="text-2xl font-bold text-base">{greeting}, {userName} 👋</h1>
+          <p className="text-sm text-muted-c mt-0.5">
+            {vendor ? "Here's your store performance today." : "Welcome to your dashboard."}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="glass" size="sm">
-            <Clock className="h-4 w-4" />
-            Last 30 days
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/dashboard/products/new">
-              <Package className="h-4 w-4" />
-              Add Product
-            </Link>
-          </Button>
+        <div className="flex items-center gap-2">
+          {vendor ? (
+            <Button size="sm" asChild>
+              <Link href="/dashboard/products/new"><Plus className="h-3.5 w-3.5" /> Add Product</Link>
+            </Button>
+          ) : (
+            <Button size="sm" asChild>
+              <Link href="/dashboard/roles"><Zap className="h-3.5 w-3.5" /> Activate Vendor Role</Link>
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Revenue"
-          value="RWF 12.4M"
-          change={18.2}
-          changeLabel="vs last month"
-          icon={<DollarSign className="h-4 w-4" />}
-          iconColor="from-brand-600 to-accent-600"
-        />
-        <StatCard
-          title="Total Orders"
-          value="1,248"
-          change={12.5}
-          changeLabel="vs last month"
-          icon={<ShoppingCart className="h-4 w-4" />}
-          iconColor="from-blue-600 to-cyan-600"
-        />
-        <StatCard
-          title="Active Products"
-          value="84"
-          change={3.1}
-          changeLabel="this month"
-          icon={<Package className="h-4 w-4" />}
-          iconColor="from-emerald-600 to-teal-600"
-        />
-        <StatCard
-          title="Affiliate Earnings"
-          value="RWF 2.1M"
-          change={24.8}
-          changeLabel="vs last month"
-          icon={<TrendingUp className="h-4 w-4" />}
-          iconColor="from-amber-600 to-orange-600"
-        />
-      </div>
+      {/* Wallet banner */}
+      {wallet && (
+        <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" }}>
+          <div>
+            <p className="text-purple-200 text-xs font-medium">Available Balance</p>
+            <p className="text-white text-2xl font-extrabold">{formatCurrency(Number(wallet.available_balance ?? 0))}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-purple-200 text-xs">Total Earned: <span className="text-white font-semibold">{formatCurrency(Number(wallet.total_earned ?? 0))}</span></p>
+            <p className="text-purple-200 text-xs mt-0.5">Pending: <span className="text-white font-semibold">{formatCurrency(Number(wallet.pending_balance ?? 0))}</span></p>
+          </div>
+          <Button size="sm" className="bg-white hover:bg-purple-50 ml-4" style={{ color: "#4B2D8F" }}>Withdraw</Button>
+        </div>
+      )}
 
-      {/* Revenue Chart + Quick Stats */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Revenue Overview</CardTitle>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-xs text-white/50">
-                  <span className="w-2 h-2 rounded-full bg-brand-500 inline-block" />
-                  Revenue
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-white/50">
-                  <span className="w-2 h-2 rounded-full bg-accent-500 inline-block" />
-                  Affiliate
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <RevenueChart />
-          </CardContent>
-        </Card>
+      {/* Stats — only show for vendors */}
+      {vendor && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatCard title="Total Revenue"     value={formatCurrency(stats.totalRevenue)}  change={18.2} changeLabel="all time" icon={<DollarSign className="h-4 w-4" />} iconColor="from-primary-600 to-accent-600" />
+          <StatCard title="Monthly Revenue"   value={formatCurrency(stats.monthlyRevenue)} change={12.5} changeLabel="vs last month" icon={<ShoppingCart className="h-4 w-4" />} iconColor="from-blue-600 to-cyan-600" />
+          <StatCard title="Active Products"   value={stats.activeProducts}                 change={3.1}  changeLabel="this month" icon={<Package className="h-4 w-4" />}    iconColor="from-emerald-600 to-teal-600" />
+          <StatCard title="Total Sales"       value={stats.totalOrders.toLocaleString()}   change={24.8} changeLabel="all time"   icon={<TrendingUp className="h-4 w-4" />}  iconColor="from-amber-600 to-orange-600" />
+        </div>
+      )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { label: "Vendor Store", value: "RWF 10.3M", icon: <Package className="h-4 w-4" />, color: "from-brand-600 to-accent-600", progress: 78 },
-              { label: "Affiliate Earnings", value: "RWF 2.1M", icon: <Link2 className="h-4 w-4" />, color: "from-emerald-600 to-teal-600", progress: 52 },
-              { label: "Influencer Revenue", value: "RWF 850K", icon: <Zap className="h-4 w-4" />, color: "from-pink-600 to-rose-600", progress: 34 },
-              { label: "Community Income", value: "RWF 420K", icon: <Users className="h-4 w-4" />, color: "from-amber-600 to-orange-600", progress: 21 },
-            ].map((item, i) => (
-              <div key={i}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg bg-gradient-to-br ${item.color}`}>
-                      <span className="text-white">{item.icon}</span>
-                    </div>
-                    <span className="text-sm text-white/70">{item.label}</span>
-                  </div>
-                  <span className="text-sm font-bold text-white">{item.value}</span>
-                </div>
-                <Progress value={item.progress} className="h-1.5" />
-              </div>
-            ))}
+      {/* No vendor state */}
+      {!vendor && (
+        <div className="bg-subtle border border-base rounded-2xl p-8 text-center">
+          <div className="text-4xl mb-3">🏪</div>
+          <h3 className="text-lg font-bold text-base mb-2">You don't have a vendor store yet</h3>
+          <p className="text-sm text-muted-c mb-4">Activate the Vendor role to start selling products, manage inventory, and run affiliate campaigns.</p>
+          <div className="flex gap-3 justify-center">
+            <Button asChild><Link href="/dashboard/roles"><Zap className="h-4 w-4" /> Activate Vendor Role</Link></Button>
+            <Button asChild variant="outline"><Link href="/marketplace">Browse Marketplace</Link></Button>
+          </div>
+        </div>
+      )}
 
-            <div className="pt-3 border-t border-white/10">
+      {/* Chart + Breakdown — vendor only */}
+      {vendor && chartData.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <Card className="xl:col-span-2">
+            <CardHeader className="pb-4 pt-5 px-5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-white">Total Income</span>
-                <span className="text-brand-400 font-black">RWF 13.67M</span>
+                <CardTitle>Revenue Overview</CardTitle>
+                <div className="flex items-center gap-3 text-xs text-muted-c">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary-500 inline-block" />Revenue</span>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 pt-0">
+              <RevenueChart data={chartData} />
+            </CardContent>
+          </Card>
 
-      {/* Recent Orders + Top Products */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Recent Orders */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Recent Orders</CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard/orders" className="text-brand-400 hover:text-brand-300 flex items-center gap-1 text-xs">
-                  View all <ArrowRight className="h-3 w-3" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentOrders.map((order) => {
-                const status = statusConfig[order.status as keyof typeof statusConfig];
-                return (
-                  <div key={order.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer group">
-                    <Avatar className="h-9 w-9 flex-shrink-0">
-                      <AvatarFallback className="text-xs">{order.customer.split(" ").map(n => n[0]).join("")}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{order.customer}</p>
-                      <p className="text-xs text-white/40 truncate">{order.product}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-white">RWF {order.amount.toLocaleString()}</p>
-                      <Badge variant={status.variant} className="text-xs mt-0.5">{status.label}</Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top Products */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Top Products</CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard/products" className="text-brand-400 hover:text-brand-300 flex items-center gap-1 text-xs">
-                  View all <ArrowRight className="h-3 w-3" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topProducts.map((product, i) => (
+          <Card>
+            <CardHeader className="pb-3 pt-5 px-5"><CardTitle>Income Breakdown</CardTitle></CardHeader>
+            <CardContent className="px-5 pb-5 pt-0 space-y-4">
+              {[
+                { label: "Vendor Store",       value: formatCurrency(stats.totalRevenue), pct: 75, color: "bg-primary-500" },
+                { label: "Wallet Available",   value: formatCurrency(Number(wallet?.available_balance ?? 0)), pct: 52, color: "bg-emerald-500" },
+                { label: "Pending Earnings",   value: formatCurrency(Number(wallet?.pending_balance ?? 0)), pct: 21, color: "bg-amber-500" },
+              ].map((item, i) => (
                 <div key={i}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white/20 w-5">#{i + 1}</span>
-                      <span className="text-sm text-white font-medium">{product.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-brand-400">RWF {(product.revenue / 1000000).toFixed(1)}M</p>
-                      <p className="text-xs text-white/30">{product.sales} sales</p>
-                    </div>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="text-sm text-muted-c">{item.label}</span>
+                    <span className="text-sm font-semibold text-base">{item.value}</span>
                   </div>
-                  <Progress value={product.progress} className="h-1.5" />
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.pct}%` }} />
+                  </div>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Recent Orders */}
+      {recentOrders.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <Card>
+            <CardHeader className="pb-3 pt-5 px-5">
+              <div className="flex items-center justify-between">
+                <CardTitle>Recent Orders</CardTitle>
+                <Link href="/dashboard/orders" className="text-xs text-primary-700 dark:text-primary-300 hover:underline flex items-center gap-1">
+                  View all <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 pt-0">
+              <div className="space-y-2">
+                {recentOrders.map((order) => {
+                  const s = statusMap[order.status as string] ?? { label: "Unknown", variant: "secondary" as const };
+                  const prof = order.profiles as Record<string, unknown> | null;
+                  const items = order.order_items as Record<string, unknown>[] | null;
+                  const productName = items?.[0]?.product_name as string ?? "Product";
+                  const customerName = prof?.full_name as string ?? prof?.email as string ?? "Customer";
+                  return (
+                    <div key={order.id as string} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-subtle transition-all cursor-pointer">
+                      <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarFallback className="text-xs">
+                          {(customerName.split(" ").map((n: string) => n[0]).join("")).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-base truncate">{customerName}</p>
+                        <p className="text-xs text-muted-c truncate">{productName}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-base">{formatCurrency(Number(order.total_amount ?? 0))}</p>
+                        <Badge variant={s.variant} className="text-xs mt-0.5">{s.label}</Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Top Products */}
+          {topProducts.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3 pt-5 px-5">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Top Products</CardTitle>
+                  <Link href="/dashboard/products" className="text-xs text-primary-700 dark:text-primary-300 hover:underline flex items-center gap-1">
+                    View all <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 pt-0 space-y-4">
+                {topProducts.map((p, i) => (
+                  <div key={p.id as string}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-bold text-muted-c/50 w-5 shrink-0">#{i + 1}</span>
+                        <span className="text-sm font-medium text-base truncate">{p.name as string}</span>
+                      </div>
+                      <div className="text-right shrink-0 ml-2">
+                        <p className="text-xs font-bold text-primary-700 dark:text-primary-300">{formatCurrency(Number(p.price))}</p>
+                        <p className="text-xs text-muted-c">{(p.sale_count as number)?.toLocaleString() ?? 0} sales</p>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-primary-500" style={{ width: `${Math.min(100, ((p.sale_count as number) ?? 0) / Math.max(1, (topProducts[0]?.sale_count as number) ?? 1) * 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Empty state for buyers with no orders */}
+      {!vendor && recentOrders.length === 0 && (
+        <div className="bg-subtle border border-base rounded-2xl p-8 text-center">
+          <div className="text-4xl mb-3">🛒</div>
+          <h3 className="text-lg font-bold text-base mb-2">No orders yet</h3>
+          <p className="text-sm text-muted-c mb-4">Start shopping on the marketplace!</p>
+          <Button asChild><Link href="/marketplace">Browse Marketplace</Link></Button>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Add Product", icon: <Package className="h-5 w-5" />, href: "/dashboard/products/new", color: "from-brand-600 to-accent-600" },
-          { label: "Create Affiliate Link", icon: <Link2 className="h-5 w-5" />, href: "/dashboard/links/new", color: "from-emerald-600 to-teal-600" },
-          { label: "New Campaign", icon: <Zap className="h-5 w-5" />, href: "/dashboard/campaigns/new", color: "from-pink-600 to-rose-600" },
-          { label: "View Analytics", icon: <TrendingUp className="h-5 w-5" />, href: "/dashboard/analytics", color: "from-amber-600 to-orange-600" },
-        ].map((action, i) => (
-          <Link key={i} href={action.href}>
-            <div className="glass-card-hover p-4 flex items-center gap-3 group">
-              <div className={`p-2.5 rounded-xl bg-gradient-to-br ${action.color} text-white group-hover:scale-110 transition-transform flex-shrink-0`}>
-                {action.icon}
-              </div>
-              <span className="text-sm font-medium text-white/70 group-hover:text-white transition-colors">{action.label}</span>
+          { label: "Add Product",         icon: <Package    className="h-4 w-4" />, href: "/dashboard/products/new",  color: "bg-primary-50 dark:bg-primary-900/30 text-primary-700" },
+          { label: "Create Affiliate Link",icon: <Link2     className="h-4 w-4" />, href: "/dashboard/links/new",     color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700" },
+          { label: "New Campaign",        icon: <Zap        className="h-4 w-4" />, href: "/dashboard/campaigns/new", color: "bg-pink-50 dark:bg-pink-900/30 text-pink-700"         },
+          { label: "View Analytics",      icon: <BarChart3  className="h-4 w-4" />, href: "/dashboard/analytics",     color: "bg-amber-50 dark:bg-amber-900/30 text-amber-700"       },
+        ].map((a, i) => (
+          <Link key={i} href={a.href}>
+            <div className="bg-surface rounded-2xl border border-base shadow-card p-4 flex items-center gap-3 hover:shadow-card-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group">
+              <div className={`p-2.5 rounded-xl shrink-0 group-hover:scale-110 transition-transform ${a.color}`}>{a.icon}</div>
+              <span className="text-sm font-medium text-base leading-tight">{a.label}</span>
             </div>
           </Link>
         ))}
