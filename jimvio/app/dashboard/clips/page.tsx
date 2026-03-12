@@ -1,117 +1,210 @@
-import React from "react";
-import { Video, Plus, Eye, Share2, Download, TrendingUp, Play, BarChart3 } from "lucide-react";
+"use client";
+export const dynamic = "force-dynamic";
+
+import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { Video, Plus, Eye, Share2, Download, TrendingUp, Play, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
-
-const mockClips = [
-  {
-    id: "1", title: "iPhone 15 Unboxing & Review", duration: "1:24", thumbnail: "📱",
-    views: 284000, shares: 12400, downloads: 3200, clicks: 18700, conversions: 142,
-    status: "active", campaign: "iPhone Launch", createdAt: "Jan 15, 2025",
-  },
-  {
-    id: "2", title: "How I Built My SaaS in 30 Days", duration: "2:18", thumbnail: "💻",
-    views: 156000, shares: 8900, downloads: 2100, clicks: 12400, conversions: 892,
-    status: "active", campaign: "Next.js Course", createdAt: "Jan 8, 2025",
-  },
-  {
-    id: "3", title: "AI Tools That Changed My Business", duration: "3:05", thumbnail: "🤖",
-    views: 98000, shares: 5600, downloads: 1800, clicks: 9300, conversions: 567,
-    status: "active", campaign: "AI Bundle", createdAt: "Dec 20, 2024",
-  },
-  {
-    id: "4", title: "Figma to Code in 60 Seconds", duration: "0:59", thumbnail: "🎨",
-    views: 54000, shares: 3200, downloads: 890, clicks: 4800, conversions: 234,
-    status: "active", campaign: "UI Kit Promo", createdAt: "Dec 10, 2024",
-  },
-];
+import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ViralClipsPage() {
+  const [clips, setClips]         = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [vendor, setVendor]       = useState<Record<string, unknown> | null>(null);
+  const [products, setProducts]   = useState<Record<string, unknown>[]>([]);
+  const [showForm, setShowForm]   = useState(false);
+  const [creating, setCreating]   = useState(false);
+  const [form, setForm]           = useState({ title: "", description: "", video_url: "", product_id: "" });
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: vend } = await supabase.from("vendors").select("*").eq("user_id", user.id).single();
+      setVendor(vend);
+
+      if (vend) {
+        const [clipsRes, prodsRes] = await Promise.all([
+          supabase.from("viral_clips").select("*").eq("vendor_id", vend.id).order("created_at", { ascending: false }),
+          supabase.from("products").select("id, name").eq("vendor_id", vend.id).eq("is_active", true).limit(20),
+        ]);
+        setClips(clipsRes.data ?? []);
+        setProducts(prodsRes.data ?? []);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  async function createClip() {
+    if (!vendor || !form.title || !form.video_url) return;
+    setCreating(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.from("viral_clips").insert({
+      vendor_id:   vendor.id,
+      title:       form.title,
+      description: form.description || null,
+      video_url:   form.video_url,
+      product_id:  form.product_id || null,
+      is_active:   true,
+    }).select().single();
+
+    if (!error && data) {
+      setClips(prev => [data, ...prev]);
+      setForm({ title: "", description: "", video_url: "", product_id: "" });
+      setShowForm(false);
+    }
+    setCreating(false);
+  }
+
+  async function toggleClip(id: string, isActive: boolean) {
+    const supabase = createClient();
+    await supabase.from("viral_clips").update({ is_active: !isActive }).eq("id", id);
+    setClips(prev => prev.map(c => c.id === id ? { ...c, is_active: !isActive } : c));
+  }
+
+  const totalViews     = clips.reduce((s, c) => s + (c.total_views as number ?? 0), 0);
+  const totalShares    = clips.reduce((s, c) => s + (c.total_shares as number ?? 0), 0);
+  const totalDownloads = clips.reduce((s, c) => s + (c.total_downloads as number ?? 0), 0);
+  const totalConvs     = clips.reduce((s, c) => s + (c.total_conversions as number ?? 0), 0);
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+
+  if (!vendor) return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold text-base">Viral Clips</h1>
+      <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+        <div className="text-4xl mb-3">🎬</div>
+        <h3 className="text-lg font-bold text-base mb-2">Activate Vendor Role First</h3>
+        <Button asChild><Link href="/dashboard/roles">Activate Vendor Role</Link></Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white">Viral Clips</h1>
-          <p className="text-white/50 text-sm mt-1">Upload marketing videos for influencers to share</p>
+          <h1 className="text-2xl font-bold text-base">Viral Clips</h1>
+          <p className="text-sm text-muted-c mt-0.5">Upload marketing videos for influencers to share</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4" /> Upload Clip
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Views" value="592K" change={38.4} icon={<Eye className="h-4 w-4" />} iconColor="from-cyan-600 to-blue-600" />
-        <StatCard title="Total Shares" value="30.1K" change={45.2} icon={<Share2 className="h-4 w-4" />} iconColor="from-pink-600 to-rose-600" />
-        <StatCard title="Downloads" value="8,090" change={28.7} icon={<Download className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
-        <StatCard title="Conversions" value="1,835" change={52.1} icon={<TrendingUp className="h-4 w-4" />} iconColor="from-amber-600 to-orange-600" />
+        <StatCard title="Total Views"     value={totalViews.toLocaleString()}     icon={<Eye        className="h-4 w-4" />} iconColor="from-cyan-600 to-blue-600" />
+        <StatCard title="Total Shares"    value={totalShares.toLocaleString()}    icon={<Share2     className="h-4 w-4" />} iconColor="from-pink-600 to-rose-600" />
+        <StatCard title="Downloads"       value={totalDownloads.toLocaleString()} icon={<Download   className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
+        <StatCard title="Conversions"     value={totalConvs.toLocaleString()}     icon={<TrendingUp className="h-4 w-4" />} iconColor="from-amber-600 to-orange-600" />
       </div>
+
+      {/* Upload Form */}
+      {showForm && (
+        <Card>
+          <CardHeader className="pt-5 px-5 pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle>Upload New Clip</CardTitle>
+              <button onClick={() => setShowForm(false)} className="btn btn-ghost btn-icon-sm"><X className="h-4 w-4" /></button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-5 pb-5 pt-0 space-y-4">
+            <Input label="Clip Title *" placeholder="e.g. TikTok Growth Secrets Revealed" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+            <Input label="Description" placeholder="Brief description for influencers" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+            <Input label="Video URL *" type="url" placeholder="https://res.cloudinary.com/... or YouTube/Vimeo URL" value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} hint="Paste a direct video URL (Cloudinary, YouTube, Vimeo)" />
+            <div>
+              <label className="text-sm font-medium text-base block mb-1.5">Link to Product (optional)</label>
+              <select value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))}
+                className="w-full h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all">
+                <option value="">No product linked</option>
+                {products.map(p => <option key={p.id as string} value={p.id as string}>{p.name as string}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={createClip} loading={creating} disabled={!form.title || !form.video_url}>
+                <Upload className="h-4 w-4" /> Upload Clip
+              </Button>
+              <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Clips Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {mockClips.map((clip) => (
-          <Card key={clip.id} hover className="overflow-hidden group">
-            {/* Thumbnail */}
-            <div className="relative aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-6xl cursor-pointer">
-              <span className="group-hover:scale-110 transition-transform duration-300">{clip.thumbnail}</span>
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Play className="h-5 w-5 text-white ml-0.5" />
+      {clips.length === 0 ? (
+        <div className="border-2 border-dashed border-base rounded-2xl p-12 text-center hover:border-primary-500/40 hover:bg-primary-500/5 transition-all cursor-pointer group" onClick={() => setShowForm(true)}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform text-white" style={{ background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" }}>
+            <Video className="h-7 w-7" />
+          </div>
+          <h3 className="text-base font-bold text-base mb-2">Upload Your First Marketing Clip</h3>
+          <p className="text-sm text-muted-c mb-4 max-w-md mx-auto">Upload a short marketing video. Influencers download and share it on TikTok, Instagram, and YouTube. Track every view and conversion.</p>
+          <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Upload First Clip</Button>
+          <p className="text-muted-c text-xs mt-3">Supports any video URL (Cloudinary, YouTube, Vimeo)</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {clips.map((clip) => (
+            <Card key={clip.id as string} hover className="overflow-hidden group">
+              <div className="relative aspect-video flex items-center justify-center cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #1a1030, #2d1f5e)" }}>
+                {clip.thumbnail_url ? (
+                  <img src={clip.thumbnail_url as string} alt={clip.title as string} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-5xl group-hover:scale-110 transition-transform">🎬</span>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <a href={clip.video_url as string} target="_blank" rel="noopener noreferrer">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 hover:bg-white/30 transition-all cursor-pointer">
+                      <Play className="h-5 w-5 text-white ml-0.5" />
+                    </div>
+                  </a>
+                </div>
+                <div className="absolute top-2.5 right-2.5">
+                  <Badge variant={clip.is_active ? "success" : "secondary"}>{clip.is_active ? "Active" : "Paused"}</Badge>
+                </div>
+                <div className="absolute bottom-2 right-2">
+                  <span className="text-xs bg-black/40 text-white rounded px-1.5 py-0.5 backdrop-blur-sm">
+                    {((clip.total_views as number) ?? 0).toLocaleString()} views
+                  </span>
                 </div>
               </div>
-              <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-lg">
-                {clip.duration}
-              </div>
-              <Badge variant="default" className="absolute top-2 left-2 text-xs">{clip.campaign}</Badge>
-            </div>
 
-            <CardContent className="p-4">
-              <p className="text-white font-semibold text-sm mb-3 line-clamp-2">{clip.title}</p>
-
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                {[
-                  { label: "Views", value: `${(clip.views / 1000).toFixed(0)}K`, icon: "👁" },
-                  { label: "Shares", value: `${(clip.shares / 1000).toFixed(1)}K`, icon: "📤" },
-                  { label: "Downloads", value: clip.downloads.toLocaleString(), icon: "⬇️" },
-                  { label: "Conversions", value: clip.conversions.toLocaleString(), icon: "✅" },
-                ].map((stat, i) => (
-                  <div key={i} className="bg-white/5 rounded-lg p-2 text-center">
-                    <div className="text-xs mb-0.5">{stat.icon}</div>
-                    <div className="text-xs font-bold text-white">{stat.value}</div>
-                    <div className="text-xs text-white/30">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <Button size="sm" variant="glass" className="flex-1">
-                  <BarChart3 className="h-3.5 w-3.5" /> Stats
+              <CardContent className="p-4">
+                <p className="text-sm font-medium text-base mb-3 line-clamp-2">{clip.title as string}</p>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {[
+                    { label: "Shares",    value: (clip.total_shares as number ?? 0).toLocaleString(),    icon: "📤" },
+                    { label: "DL",        value: (clip.total_downloads as number ?? 0).toLocaleString(), icon: "⬇️" },
+                    { label: "Clicks",    value: (clip.total_clicks as number ?? 0).toLocaleString(),    icon: "🖱️" },
+                    { label: "Conv.",     value: (clip.total_conversions as number ?? 0).toLocaleString(),icon: "✅" },
+                  ].map((s, i) => (
+                    <div key={i} className="bg-subtle rounded-lg p-2 text-center">
+                      <div className="text-xs mb-0.5">{s.icon}</div>
+                      <div className="text-xs font-bold text-base">{s.value}</div>
+                      <div className="text-xs text-muted-c">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => toggleClip(clip.id as string, clip.is_active as boolean)}
+                >
+                  {clip.is_active ? <><Video className="h-3.5 w-3.5" /> Pause</> : <><Play className="h-3.5 w-3.5" /> Activate</>}
                 </Button>
-                <Button size="sm" variant="glass" className="flex-1">
-                  <Share2 className="h-3.5 w-3.5" /> Share
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Upload CTA */}
-      <div className="border-2 border-dashed border-white/10 rounded-2xl p-12 text-center hover:border-brand-500/40 hover:bg-brand-500/5 transition-all cursor-pointer group">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-          <Video className="h-7 w-7 text-white" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <h3 className="text-white font-bold text-lg mb-2">Upload Marketing Video</h3>
-        <p className="text-white/50 text-sm mb-4 max-w-md mx-auto">
-          Upload a short marketing clip. Influencers can download and share it across TikTok, Instagram, and YouTube. Track every view and conversion.
-        </p>
-        <Button>
-          <Plus className="h-4 w-4" /> Upload Your First Clip
-        </Button>
-        <p className="text-white/30 text-xs mt-3">Supports MP4, MOV, AVI • Max 500MB</p>
-      </div>
+      )}
     </div>
   );
 }

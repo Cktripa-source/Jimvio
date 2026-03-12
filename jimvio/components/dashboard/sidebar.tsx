@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
 
-type DashboardRole = "buyer" | "vendor" | "affiliate" | "influencer" | "community" | "admin";
+export type DashboardRole = "buyer" | "vendor" | "affiliate" | "influencer" | "community" | "admin";
 
 const roleMenus: Record<DashboardRole, Array<{ label: string; href: string; icon: React.ReactNode; badge?: string }>> = {
   buyer: [
