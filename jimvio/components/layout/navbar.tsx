@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -66,8 +67,8 @@ export function Navbar({ user }: NavbarProps) {
         isScrolled && "shadow-xl shadow-black/[0.08] border-[#f97316]/10"
       )}
     >
-      {/* ── UTILITY BAR (compact) ── */}
-      <div className="bg-white/50 backdrop-blur-sm border-b border-white/70 py-1.5 px-4 md:px-5">
+      {/* ── UTILITY BAR (compact) — hidden on mobile to avoid clutter ── */}
+      <div className="hidden md:block bg-white/50 backdrop-blur-sm border-b border-white/70 py-1.5 px-4 md:px-5">
         <div className="max-w-[1280px] mx-auto flex items-center justify-between overflow-x-auto no-scrollbar whitespace-nowrap">
           <div className="text-[10px] text-[#6b7280] font-black capitalize tracking-wider">
             Global Hub for <span className="text-[#f97316]">Creator-Commerce</span>
@@ -108,16 +109,16 @@ export function Navbar({ user }: NavbarProps) {
 
       {/* ── MAIN NAV (glass content) ── */}
       <nav className="bg-white/40 backdrop-blur-sm flex-1">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-between gap-3 lg:gap-6 min-h-[52px] sm:min-h-[56px] lg:h-[56px]">
-            {/* Logo — never shrink on mobile */}
-            <Link href="/" className="shrink-0 transition-transform active:scale-95 flex items-center min-w-0">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-4 md:px-6">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 lg:gap-6 min-h-[52px] sm:min-h-[56px] lg:h-[56px] min-w-0">
+            {/* Logo — shrink on very small screens */}
+            <Link href="/" className="shrink-0 transition-transform active:scale-95 flex items-center min-w-0 max-w-[50%]">
               <Image
                 src="/jimvio-logo.png"
                 alt="Jimvio"
                 width={320}
                 height={90}
-                className="w-[100px] sm:w-[120px] md:w-[160px] lg:w-[200px] h-auto object-contain"
+                className="w-[90px] sm:w-[120px] md:w-[160px] lg:w-[200px] h-auto object-contain"
                 priority
               />
             </Link>
@@ -139,8 +140,8 @@ export function Navbar({ user }: NavbarProps) {
               </div>
             </div>
 
-            {/* Right group: always visible, menu last on mobile */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Right group: always visible, menu last on mobile; no wrap */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0 flex-nowrap min-w-0">
               {user ? (
                 <>
                   {/* Mobile Cart & Chat */}
@@ -296,16 +297,16 @@ export function Navbar({ user }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile menu — full-screen overlay above all content */}
-        {mobileOpen && (
+        {/* Mobile menu — portal to body so not clipped by header overflow-hidden */}
+        {mobileOpen && typeof document !== "undefined" && createPortal(
           <>
             <div
-              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998] animate-in fade-in duration-200"
+              className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
               aria-hidden
               onClick={() => setMobileOpen(false)}
             />
-            <div className="lg:hidden fixed inset-x-0 top-0 bottom-0 z-[9999] overflow-y-auto no-scrollbar animate-in slide-in-from-right-full duration-300 bg-white shadow-2xl max-w-[360px] ml-auto">
-              <div className="sticky top-0 flex items-center justify-between px-4 py-4 bg-white border-b border-[#f0f0f0]">
+            <div className="lg:hidden fixed inset-0 z-[9999] overflow-y-auto bg-white shadow-2xl w-full pt-[env(safe-area-inset-top,0px)]">
+              <div className="sticky top-0 flex items-center justify-between px-4 py-4 bg-white border-b border-[#f0f0f0] z-10">
                 <span className="text-sm font-black text-[#1a1a1a] uppercase tracking-wider">Menu</span>
                 <button
                   type="button"
@@ -347,7 +348,7 @@ export function Navbar({ user }: NavbarProps) {
                   className="flex items-center gap-4 py-3.5 px-4 rounded-xl text-[15px] font-black text-[#1a1a1a] hover:bg-[#fff7ed] hover:text-[#f97316] transition-all active:scale-[0.98]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <span className="p-2 rounded-lg bg-[#fafafa] group-hover:bg-white text-[#6b7280]">{link.icon}</span>
+                  <span className="p-2 rounded-lg bg-[#fafafa] text-[#6b7280]">{link.icon}</span>
                   {link.label}
                 </Link>
               ))}
@@ -363,13 +364,14 @@ export function Navbar({ user }: NavbarProps) {
 
               {!user && (
                 <div className="grid grid-cols-2 gap-3 mt-6">
-                  <Link href="/login" className="py-4 text-center bg-[#fafafa] border border-[#f0f0f0] rounded-xl font-black text-sm active:scale-95" onClick={() => setMobileOpen(false)}>Login</Link>
+                  <Link href="/login" className="py-4 text-center bg-[#fafafa] border border-[#f0f0f0] rounded-xl font-black text-sm text-[#1a1a1a] active:scale-95" onClick={() => setMobileOpen(false)}>Login</Link>
                   <Link href="/register" className="py-4 text-center bg-white border-2 border-[#f97316] text-[#f97316] rounded-xl font-black text-sm active:scale-95" onClick={() => setMobileOpen(false)}>Join Free</Link>
                 </div>
               )}
               </div>
             </div>
-          </>
+          </>,
+          document.body
         )}
       </nav>
     </header>
