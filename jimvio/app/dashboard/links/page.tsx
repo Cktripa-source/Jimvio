@@ -93,11 +93,11 @@ export default function AffiliateLinksPage() {
 
   if (!loading && !affiliate) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-base">Affiliate Links</h1>
-        <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+      <div className="space-y-5">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Affiliate Links</h1>
+        <div className="bg-subtle border border-base rounded-xl p-8 text-center">
           <div className="text-4xl mb-3">🔗</div>
-          <h3 className="text-lg font-bold text-base mb-2">Activate Affiliate Role</h3>
+          <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">Activate Affiliate Role</h3>
           <p className="text-sm text-muted-c mb-4">Start earning commissions by promoting products on Jimvio.</p>
           <Button onClick={activateAffiliate}>Activate Affiliate Role</Button>
         </div>
@@ -106,12 +106,12 @@ export default function AffiliateLinksPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-base">Affiliate Links</h1>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Affiliate Links</h1>
           <p className="text-sm text-muted-c mt-0.5">
-            Your code: <code className="text-xs bg-subtle border border-base px-2 py-0.5 rounded-lg text-primary-700 dark:text-primary-300">
+            Your code: <code className="text-xs bg-subtle border border-base px-2 py-0.5 rounded-lg text-[var(--color-accent)]">
               {affiliate?.affiliate_code as string ?? "—"}
             </code>
           </p>
@@ -122,7 +122,7 @@ export default function AffiliateLinksPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total Clicks"    value={loading ? "—" : totalClicks.toLocaleString()}  change={22.4} icon={<MousePointer className="h-4 w-4" />} iconColor="from-primary-600 to-accent-600" />
         <StatCard title="Conversions"     value={loading ? "—" : totalConvs.toLocaleString()}   change={18.9} icon={<ShoppingCart className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
         <StatCard title="Total Earnings"  value={loading ? "—" : formatCurrency(totalEarnings)} change={31.2} icon={<DollarSign  className="h-4 w-4" />} iconColor="from-amber-600 to-orange-600" />
@@ -132,26 +132,26 @@ export default function AffiliateLinksPage() {
       {/* Create Link Form */}
       {showNewForm && (
         <Card>
-          <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Create New Affiliate Link</CardTitle></CardHeader>
-          <CardContent className="px-5 pb-5 pt-0 space-y-4">
+          <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Create New Affiliate Link</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-4 pt-0 space-y-4">
             <div>
-              <label className="text-sm font-medium text-base block mb-1.5">Destination URL</label>
+              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Destination URL</label>
               <input
                 type="url"
                 value={newUrl}
                 onChange={e => setNewUrl(e.target.value)}
                 placeholder="https://jimvio.com/marketplace/product-slug"
-                className="w-full h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+                className="w-full h-10 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 transition-all"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-base block mb-1.5">Commission Rate (%)</label>
+              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Commission Rate (%)</label>
               <input
                 type="number"
                 value={newRate}
                 onChange={e => setNewRate(e.target.value)}
                 min="1" max="90"
-                className="w-32 h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+                className="w-32 h-10 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 transition-all"
               />
             </div>
             <div className="flex gap-3">
@@ -164,7 +164,7 @@ export default function AffiliateLinksPage() {
 
       {/* Links Table */}
       <Card>
-        <CardHeader className="pt-5 px-5 pb-4">
+        <CardHeader className="pt-4 px-4 pb-3">
           <div className="flex items-center justify-between">
             <CardTitle>My Affiliate Links</CardTitle>
             <Badge variant="secondary">{links.length} links</Badge>
@@ -192,7 +192,7 @@ export default function AffiliateLinksPage() {
                     <tr>
                       <td colSpan={7} className="text-center py-16 text-muted-c">
                         <div className="text-3xl mb-2">🔗</div>
-                        <p className="font-medium text-base mb-1">No links yet</p>
+                        <p className="font-medium text-[var(--color-text-primary)] mb-1">No links yet</p>
                         <p className="text-sm">Create your first affiliate link to start earning.</p>
                       </td>
                     </tr>
@@ -203,7 +203,7 @@ export default function AffiliateLinksPage() {
                     return (
                       <tr key={l.id as string} className="group">
                         <td className="pl-5">
-                          <p className="text-sm font-medium text-base">
+                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
                             {product?.name as string ?? "Custom Link"}
                           </p>
                           <p className="text-xs text-muted-c truncate max-w-[200px]">
@@ -212,7 +212,7 @@ export default function AffiliateLinksPage() {
                         </td>
                         <td>
                           <div className="flex items-center gap-2">
-                            <code className="text-xs font-mono bg-subtle border border-base text-primary-700 dark:text-primary-300 px-2 py-1 rounded-lg">
+                            <code className="text-xs font-mono bg-subtle border border-base text-[var(--color-accent)] px-2 py-1 rounded-lg">
                               {l.link_code as string}
                             </code>
                             <button
@@ -224,9 +224,9 @@ export default function AffiliateLinksPage() {
                             </button>
                           </div>
                         </td>
-                        <td className="text-right"><span className="text-sm text-base">{((l.total_clicks as number) ?? 0).toLocaleString()}</span></td>
-                        <td className="text-right"><span className="text-sm text-base">{((l.total_conversions as number) ?? 0).toLocaleString()}</span></td>
-                        <td className="text-right"><span className="text-sm font-bold text-base">{formatCurrency(Number(l.total_earnings ?? 0))}</span></td>
+                        <td className="text-right"><span className="text-sm text-[var(--color-text-primary)]">{((l.total_clicks as number) ?? 0).toLocaleString()}</span></td>
+                        <td className="text-right"><span className="text-sm text-[var(--color-text-primary)]">{((l.total_conversions as number) ?? 0).toLocaleString()}</span></td>
+                        <td className="text-right"><span className="text-sm font-bold text-[var(--color-text-primary)]">{formatCurrency(Number(l.total_earnings ?? 0))}</span></td>
                         <td className="text-center">
                           <Badge variant={l.is_active ? "success" : "warning"}>
                             {l.is_active ? "Active" : "Inactive"}

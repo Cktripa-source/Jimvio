@@ -1,29 +1,38 @@
 "use client";
+
 import Link from "next/link";
 
-export function MarketplaceFilters({ currentSort, currentType }: { currentSort?: string; currentType?: string }) {
+export function MarketplaceFilters({
+  currentType,
+}: {
+  currentSort?: string;
+  currentType?: string;
+}) {
   return (
-    <>
-      <div>
-        <h3 className="text-xs font-semibold text-muted-c uppercase tracking-wider mb-3">Product Type</h3>
-        <div className="space-y-1">
-          {[
-            { label: "Physical",   value: "physical" },
-            { label: "Digital",    value: "digital"  },
-            { label: "Courses",    value: "course"   },
-            { label: "Software",   value: "software" },
-            { label: "Templates",  value: "template" },
-            { label: "Ebooks",     value: "ebook"    },
-          ].map((t) => (
-            <Link key={t.value} href={`/marketplace?type=${t.value}`}>
-              <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all cursor-pointer ${currentType === t.value ? "font-semibold text-white" : "text-muted-c hover:text-base hover:bg-subtle"}`}
-                style={currentType === t.value ? { background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" } : undefined}>
-                {t.label}
-              </div>
-            </Link>
-          ))}
-        </div>
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <h3 className="text-label text-[var(--color-text-muted)] mb-3">Product type</h3>
+      <div className="space-y-0.5">
+        {[
+          { label: "Physical", value: "physical" },
+          { label: "Digital", value: "digital" },
+          { label: "Courses", value: "course" },
+          { label: "Software", value: "software" },
+          { label: "Templates", value: "template" },
+          { label: "Ebooks", value: "ebook" },
+        ].map((t) => (
+          <Link key={t.value} href={`/marketplace?type=${t.value}`}>
+            <div
+              className={`px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors cursor-pointer ${
+                currentType === t.value
+                  ? "font-medium text-[var(--color-accent)] bg-[var(--color-accent-light)] border border-[var(--color-accent)]"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]"
+              }`}
+            >
+              {t.label}
+            </div>
+          </Link>
+        ))}
       </div>
-    </>
+    </div>
   );
 }

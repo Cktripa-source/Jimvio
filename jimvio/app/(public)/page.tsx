@@ -1,592 +1,726 @@
 import React from "react";
 import Link from "next/link";
 import {
-  ArrowRight, Star, CheckCircle, TrendingUp, Users,
-  ShoppingBag, Link2, Video, MessageSquare, Shield,
-  Package, BarChart3, Zap, ChevronRight, Play,
-  Flame, BookOpen, Monitor, ShoppingCart, Code2,
-  Activity, Clock, CalendarDays, Bell, Megaphone,
-  Scissors, LineChart, Tag
+  Zap, Shirt, Settings, Sprout, Pill, FlaskConical, HardHat, Car, Home, Laptop, GraduationCap, Wrench,
+  ChevronRight, ChevronDown, User, ShoppingCart, MessageCircle, Star, ShieldCheck, CheckCircle, Ship, Globe, DollarSign,
+  ArrowRight, Search, Menu, Package, TrendingUp, Users, Factory, Megaphone, Video, BarChart2,
+  Lock, CreditCard, PlayCircle, Plus, Info, Clock, ThumbsUp, Bookmark, UserPlus, Linkedin
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
-  getCategories, getFeaturedProducts, getTrendingProducts,
-  getViralClips, getCommunities, getTopVendors, getPlatformStats,
+  getCategories, getFeaturedProducts, getTrendingProducts, getTopVendors,
+  getCommunities, getViralClips, getCampaigns, getTopAffiliates, getPlatformStats
 } from "@/services/db";
-import { formatCurrency } from "@/lib/utils";
-import { HomepageClientShell } from "@/components/shared/homepage-client-shell";
+import { createClient, getCachedUser } from "@/lib/supabase/server";
+import { HeroRightPanel } from "@/components/layout/hero-right-panel";
+import { HeroSearch } from "@/components/marketplace/hero-search";
+import { ProductCardClient } from "@/components/marketplace/product-card-client";
+import { ViralStoryRow } from "@/components/marketplace/viral-story-row";
+import { FollowButton } from "@/components/marketplace/follow-button";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────────────────────────────
-// Server component — fetches all dynamic data in parallel
-// ─────────────────────────────────────────────────────────────────
 export default async function HomePage() {
-  const [categories, featured, trending, clips, communities, vendors, platformStats] =
-    await Promise.all([
-      getCategories().catch(() => []),
-      getFeaturedProducts(4).catch(() => []),
-      getTrendingProducts(8).catch(() => []),
-      getViralClips(3).catch(() => []),
-      getCommunities(3).catch(() => []),
-      getTopVendors(4).catch(() => []),
-      getPlatformStats().catch(() => ({ totalUsers: 0, totalVendors: 0, totalProducts: 0 })),
-    ]);
+  let profile: { email?: string | null; full_name?: string | null; avatar_url?: string | null } | null = null;
+  try {
+    const { data: { user } } = await getCachedUser();
+    if (user) {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      profile = data ?? {
+        email: user.email,
+        full_name: user.user_metadata?.full_name ?? null,
+        avatar_url: user.user_metadata?.avatar_url ?? null,
+      };
+    }
+  } catch {
+    // ignore
+  }
 
-  const siteStats = [
-    { value: `${platformStats.totalVendors > 0 ? platformStats.totalVendors.toLocaleString() : "10,000"}+`, label: "Active Vendors",   icon: "🏪" },
-    { value: `${platformStats.totalProducts > 0 ? platformStats.totalProducts.toLocaleString() : "500K"}+`,  label: "Products Listed", icon: "📦" },
-    { value: "25,000+",  label: "Affiliates", icon: "🔗" },
-    { value: "50+",      label: "Countries",  icon: "🌍" },
-  ];
+  const [
+    categories, featured, trending, vendors,
+    communities, viralClips, topAffiliates, platformStats
+  ] = await Promise.all([
+    getCategories().catch(() => []),
+    getFeaturedProducts(6).catch(() => []),
+    getTrendingProducts(8).catch(() => []),
+    getTopVendors(4).catch(() => []),
+    getCommunities(4).catch(() => []),
+    getViralClips(6).catch(() => []),
+    getTopAffiliates(3).catch(() => []),
+    getPlatformStats().catch(() => ({ totalUsers: 0, totalVendors: 0, totalProducts: 0 })),
+  ]);
 
-  // Fallback categories if DB empty
-  const displayCategories = categories.length > 0 ? categories.slice(0, 8) : [
-    { id: "1", slug: "electronics",  name: "Electronics",   icon: "💻" },
-    { id: "2", slug: "fashion",      name: "Fashion",       icon: "👗" },
-    { id: "3", slug: "digital",      name: "Digital",       icon: "💾" },
-    { id: "4", slug: "courses",      name: "Courses",       icon: "📚" },
-    { id: "5", slug: "ai-tools",     name: "AI Tools",      icon: "🤖" },
-    { id: "6", slug: "agriculture",  name: "Agriculture",   icon: "🌱" },
-    { id: "7", slug: "health-beauty",name: "Health",        icon: "💊" },
-    { id: "8", slug: "home-garden",  name: "Home & Garden", icon: "🏠" },
-  ];
+  const sidebarCats = (categories.length > 0 ? categories.slice(0, 12) : [
+    { name: "Electronics", slug: "electronics" },
+    { name: "Machinery", slug: "machinery" },
+  ]).map((cat: any) => {
+    let icon = <Package className="h-4 w-4" />;
+    if (cat.name.toLowerCase().includes("elect")) icon = <Zap className="h-4 w-4" />;
+    if (cat.name.toLowerCase().includes("fashion")) icon = <Shirt className="h-4 w-4" />;
+    if (cat.name.toLowerCase().includes("machin")) icon = <Settings className="h-4 w-4" />;
+    if (cat.name.toLowerCase().includes("agri")) icon = <Sprout className="h-4 w-4" />;
+    if (cat.name.toLowerCase().includes("health")) icon = <Pill className="h-4 w-4" />;
+    return { icon, label: cat.name, slug: cat.slug };
+  });
 
   return (
-    <div className="page-wrapper">
+    <div className="bg-white min-h-screen pb-20 md:pb-0">
 
-      {/* ── HERO ──────────────────────────────────────────────── */}
-      <section className="relative pt-24 pb-10 overflow-hidden" style={{
-        background: "linear-gradient(160deg, #f5f3ff 0%, #ede9fe 40%, #faf5ff 100%)"
-      }}>
-        <div className="hidden dark:block absolute inset-0" style={{
-          background: "linear-gradient(160deg, #0A081C 0%, #130A2E 60%, #0A081C 100%)"
-        }} />
-        <div className="container-xl relative z-10">
-          <div className="max-w-3xl mx-auto text-center mb-10">
-            <Badge variant="default" className="mb-5 px-4 py-1.5 text-sm">
-              🌍 Africa&apos;s #1 Creator-Commerce Platform
-            </Badge>
-            <h1 className="heading-xl text-base mb-5 text-balance">
-              One Account.{" "}
-              <span className="text-gradient">Every Role.</span>
-              <br />Unlimited Income.
-            </h1>
-            <p className="text-lg text-muted-c mb-7 leading-relaxed">
-              Buy, sell, affiliate, influence, and build communities — all under one platform.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button size="lg" asChild>
-                <Link href="/register">Get Started Free <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/marketplace"><Play className="h-4 w-4" /> Browse Marketplace</Link>
-              </Button>
-            </div>
-          </div>
+      {/* ── HERO AREA ── */}
+      <div className="bg-white border-b border-[#e8e8e8]">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 grid grid-cols-1 xl:grid-cols-[1fr,280px] gap-6 py-6 items-start">
 
-          {/* Platform stats (dynamic) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto mb-6">
-            {siteStats.map((s) => (
-              <div key={s.label} className="bg-surface rounded-2xl border border-base shadow-card p-4 text-center">
-                <div className="text-2xl mb-1">{s.icon}</div>
-                <div className="text-xl font-extrabold text-base">{s.value}</div>
-                <div className="text-xs text-muted-c mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Category pills (dynamic from DB) */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {displayCategories.map((c) => (
-              <Link key={c.slug} href={`/marketplace?cat=${c.slug}`}>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface border border-base shadow-card text-sm font-medium text-base hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-800 transition-all cursor-pointer">
-                  {c.icon} {c.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── MAIN TWO-COLUMN LAYOUT ─────────────────────────────── */}
-      <div className="container-xl py-8">
-        <div className="flex gap-6 items-start">
-
-          {/* ══════════════════════════════════════════
-              MAIN CONTENT
-          ══════════════════════════════════════════ */}
-          <div className="flex-1 min-w-0 space-y-10">
-
-            {/* ── FEATURED PRODUCTS (dynamic) ───────── */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-5 w-5 text-accent-500" />
-                  <h2 className="text-xl font-bold text-base">Featured Products</h2>
-                  {featured.length > 0 && (
-                    <div className="flex gap-0.5 ml-1">
-                      {[1,2,3,4,5].map(i => <Star key={i} className="h-3.5 w-3.5 text-accent-500 fill-accent-500" />)}
-                    </div>
-                  )}
+          {/* Hero card: one badge, clips row, headline, CTAs, stats, search */}
+          <div className="rounded-3xl overflow-hidden bg-white border border-[#f0f0f0] shadow-sm hover:border-[#f97316]/15 transition-colors">
+            {/* Single live badge + viral clips row */}
+            <div className="border-b border-[#f0f0f0] bg-[#fafafa]/60 px-4 sm:px-6 pt-5 pb-5">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#fff7ed] border border-[#f97316]/20 rounded-full text-[10px] font-black text-[#f97316] uppercase tracking-widest">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#f97316] animate-pulse" />
+                    Creator Hub Live
+                  </span>
                 </div>
-                <Link href="/marketplace?featured=1" className="text-sm text-primary-700 dark:text-primary-300 hover:underline flex items-center gap-1">
-                  View all <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
+                <div className="flex-1 min-w-0" />
               </div>
-
-              {featured.length > 0 ? (
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                  {featured.map((p: Record<string, unknown>) => (
-                    <ProductCard key={p.id as string} product={p} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyProductsCard
-                  label="No featured products yet"
-                  sub="Vendors will feature their best products here."
-                  href="/marketplace"
-                />
-              )}
-            </section>
-
-            {/* ── VIRAL CLIPS (dynamic) ─────────────── */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Video className="h-5 w-5 text-primary-700 dark:text-primary-300" />
-                  <h2 className="text-xl font-bold text-base">Viral Clips</h2>
-                  <div className="flex items-center gap-1 bg-subtle border border-base rounded-xl p-1">
-                    {["Trending", "Best Sellers", "New Releases"].map((tab, i) => (
-                      <span
-                        key={tab}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={i === 0 ? { background: "linear-gradient(135deg, #4B2D8F, #7C3AED)", color: "white" } : { color: "var(--tw-text-muted)" }}
-                      >
-                        {i === 0 && <Flame className="h-3 w-3" />}
-                        {tab}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {clips.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {clips.map((clip: Record<string, unknown>) => (
-                    <ClipCard key={clip.id as string} clip={clip} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyProductsCard
-                  label="No viral clips yet"
-                  sub="Vendors will upload marketing videos for influencers to promote."
-                  href="/dashboard/clips"
-                />
-              )}
-            </section>
-
-            {/* ── AFFILIATE & INFLUENCER HUB ─────────── */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Link2 className="h-5 w-5 text-primary-700 dark:text-primary-300" />
-                  <h2 className="text-xl font-bold text-base">Affiliate & Influencer Hub</h2>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                {[
-                  { label: "Ebooks",      icon: <BookOpen      className="h-6 w-6" />, color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600", slug: "ebooks" },
-                  { label: "Courses",     icon: <Monitor       className="h-6 w-6" />, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600", slug: "courses" },
-                  { label: "Merchandise", icon: <ShoppingCart  className="h-6 w-6" />, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600",       slug: "physical" },
-                  { label: "Software",    icon: <Code2         className="h-6 w-6" />, color: "bg-green-100 dark:bg-green-900/30 text-green-600",    slug: "software" },
-                ].map((cat) => (
-                  <Link key={cat.label} href={`/marketplace?type=${cat.slug}`}>
-                    <div className="bg-surface rounded-2xl border border-base shadow-card hover:shadow-card-md hover:-translate-y-0.5 transition-all duration-200 p-4 text-center group cursor-pointer">
-                      <div className={`w-14 h-14 rounded-2xl ${cat.color} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
-                        {cat.icon}
-                      </div>
-                      <p className="font-semibold text-sm text-base">{cat.label}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              {/* Stats + Testimonial */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl overflow-hidden relative p-5 flex items-center gap-4"
-                  style={{ background: "linear-gradient(135deg, #4B2D8F 0%, #7C3AED 100%)" }}>
-                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 50%, #F5A623 0%, transparent 60%)" }} />
-                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl shrink-0 relative z-10">👨‍💼</div>
-                  <div className="relative z-10">
-                    <p className="text-white text-sm leading-relaxed">
-                      &ldquo;I made <span className="font-black" style={{ color: "#F5A623" }}>$12,000</span> selling my course on Jimvio in 3 months.&rdquo;
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-purple-200">— Rising Influencer</span>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "#F5A623", color: "#fff" }}>Rising Influencer</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: platformStats.totalUsers > 0 ? `${(platformStats.totalUsers / 1000).toFixed(0)}k` : "120k", label: "Users" },
-                    { value: "$8.2M",  label: "Sales" },
-                    { value: "3,400",  label: "Creators" },
-                    { value: "25k",    label: "Affiliates" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-surface rounded-2xl border border-base shadow-card p-4 text-center">
-                      <p className="text-2xl font-extrabold text-gradient mb-0.5">{s.value}</p>
-                      <p className="text-xs text-muted-c font-medium">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* ── MARKETPLACE PREVIEW (dynamic) ──────── */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5 text-primary-700 dark:text-primary-300" />
-                  <h2 className="text-xl font-bold text-base">Marketplace</h2>
-                  <Badge variant="default" className="text-xs">
-                    {platformStats.totalProducts > 0 ? `${platformStats.totalProducts.toLocaleString()}+` : "52,000+"} products
-                  </Badge>
-                </div>
-                <Link href="/marketplace" className="text-sm text-primary-700 dark:text-primary-300 hover:underline flex items-center gap-1">
-                  Open Marketplace <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-
-              {trending.length > 0 ? (
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                  {trending.slice(0, 4).map((p: Record<string, unknown>) => (
-                    <ProductCard key={p.id as string} product={p} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyProductsCard
-                  label="Marketplace is empty"
-                  sub="Be the first to list a product!"
-                  href="/register"
-                />
-              )}
-              <div className="mt-4 text-center">
-                <Button variant="outline" size="lg" asChild>
-                  <Link href="/marketplace">Browse All Products <ArrowRight className="h-4 w-4" /></Link>
-                </Button>
-              </div>
-            </section>
-
-            {/* ── HOW IT WORKS ─────────────────────────── */}
-            <section>
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-base mb-2">Start Earning in <span className="text-gradient">4 Steps</span></h2>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  { s: "01", icon: "👤", t: "Create Account",   d: "Sign up free. One account for all roles." },
-                  { s: "02", icon: "⚡", t: "Activate Roles",    d: "Enable Vendor, Affiliate, or Influencer." },
-                  { s: "03", icon: "🚀", t: "Start Earning",     d: "Sell, promote, or build a community." },
-                  { s: "04", icon: "💰", t: "Get Paid Fast",      d: "Withdraw via Irembopay instantly." },
-                ].map((s, i) => (
-                  <div key={i} className="bg-surface rounded-2xl border border-base shadow-card p-5 text-center group hover:shadow-card-md transition-all duration-200">
-                    <div className="text-xs font-black text-muted-c/30 mb-2 tracking-widest">{s.s}</div>
-                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-200">{s.icon}</div>
-                    <h3 className="font-semibold text-sm text-base mb-1">{s.t}</h3>
-                    <p className="text-xs text-muted-c leading-relaxed">{s.d}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-          </div>
-
-          {/* ══════════════════════════════════════════
-              RIGHT SIDEBAR (dynamic)
-          ══════════════════════════════════════════ */}
-          <aside className="hidden xl:flex flex-col gap-5 w-72 shrink-0">
-
-            {/* Live Activity (static UI — real-time via subscription in future) */}
-            <div className="bg-surface rounded-2xl border border-base shadow-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <h3 className="text-sm font-bold text-base">Live Activity</h3>
-                </div>
-                <Activity className="h-3.5 w-3.5 text-muted-c" />
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "John Itom",   action: "Joined Platform",   amount: "$45,250", time: "5 min ago" },
-                  { name: "AlexGrowth",  action: "Made a Sale",       amount: "$91,359", time: "12 min ago" },
-                  { name: "Lisa Teach",  action: "Launched Community",amount: "$32,189", time: "18 min ago" },
-                ].map((a, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                      style={{ background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" }}>
-                      {a.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-base truncate">{a.name}</p>
-                      <p className="text-xs text-muted-c">{a.action} · {a.time}</p>
-                    </div>
-                    <span className="text-xs font-bold text-primary-900 dark:text-primary-300 shrink-0">{a.amount}</span>
-                  </div>
-                ))}
-              </div>
+              <ViralStoryRow clips={viralClips} showHeader={false} />
             </div>
 
-            {/* Top Vendors (dynamic) */}
-            {vendors.length > 0 && (
-              <div className="bg-surface rounded-2xl border border-base shadow-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-primary-700 dark:text-primary-300" />
-                    <h3 className="text-sm font-bold text-base">Featured Vendors</h3>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {vendors.map((v: Record<string, unknown>, i: number) => (
-                    <Link key={v.id as string} href={`/vendors/${v.business_slug as string}`}>
-                      <div className="flex items-start gap-2.5 cursor-pointer group">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 group-hover:scale-105 transition-transform"
-                          style={{ background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" }}>
-                          {(v.business_name as string).slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-xs font-semibold text-base group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors truncate">{v.business_name as string}</p>
-                            <div className="flex items-center shrink-0">
-                              <Star className="h-2.5 w-2.5 text-accent-500 fill-accent-500" />
-                              <span className="text-xs font-semibold text-base ml-0.5">{Number(v.rating ?? 0).toFixed(1)}</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-c">{(v.total_sales as number)?.toLocaleString() ?? 0} sales</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <Link href="/vendors" className="mt-3 block text-center text-xs text-primary-700 dark:text-primary-300 hover:underline">
-                  View all vendors →
-                </Link>
-              </div>
-            )}
-
-            {/* Communities (dynamic) */}
-            {communities.length > 0 && (
-              <div className="bg-surface rounded-2xl border border-base shadow-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-primary-700 dark:text-primary-300" />
-                    <h3 className="text-sm font-bold text-base">Hot Communities</h3>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {communities.map((c: Record<string, unknown>) => (
-                    <Link key={c.id as string} href={`/communities/${c.slug as string}`}>
-                      <div className="flex items-center gap-2.5 cursor-pointer group">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform bg-primary-50 dark:bg-primary-900/30">
-                          {c.avatar_url ? "👥" : "👥"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-base group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors truncate">{c.name as string}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-muted-c">{(c.member_count as number)?.toLocaleString() ?? 0} members</span>
-                            {!!c.monthly_price && (
-                              <span className="text-xs font-bold text-primary-700 dark:text-primary-300">
-                                RWF {(c.monthly_price as number).toLocaleString()}/mo
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <Link href="/communities" className="mt-3 block text-center text-xs text-primary-700 dark:text-primary-300 hover:underline">
-                  Browse all communities →
-                </Link>
-              </div>
-            )}
-
-            {/* Tools & Resources */}
-            <div className="bg-surface rounded-2xl border border-base shadow-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-4 w-4 text-primary-700 dark:text-primary-300" />
-                <h3 className="text-sm font-bold text-base">Tools & Resources</h3>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { label: "AI\nMarketing", icon: <Megaphone className="h-5 w-5" />, color: "bg-orange-100 dark:bg-orange-900/30 text-orange-600", href: "/dashboard/ai" },
-                  { label: "Sales\nTemplate", icon: <Tag     className="h-5 w-5" />, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600", href: "/marketplace?type=template" },
-                  { label: "Clip\nGrowth",  icon: <Scissors className="h-5 w-5" />, color: "bg-pink-100 dark:bg-pink-900/30 text-pink-600",      href: "/dashboard/clips" },
-                  { label: "Growth\nDashboard",icon:<LineChart className="h-5 w-5"/>,color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600",      href: "/dashboard/analytics" },
-                ].map((t, i) => (
-                  <Link key={i} href={t.href}>
-                    <div className="flex flex-col items-center gap-1.5 cursor-pointer group">
-                      <div className={`w-11 h-11 rounded-xl ${t.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                        {t.icon}
-                      </div>
-                      <p className="text-[10px] text-muted-c text-center leading-tight whitespace-pre-line">{t.label}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Join CTA */}
-            <div className="rounded-2xl overflow-hidden relative p-5 text-center"
-              style={{ background: "linear-gradient(135deg, #4B2D8F 0%, #7C3AED 100%)" }}>
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, #F5A623 0%, transparent 50%)" }} />
+            {/* Headline, copy, CTAs, stats, search */}
+            <div className="px-4 sm:px-6 md:px-10 py-8 md:py-10 relative">
+              <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
               <div className="relative z-10">
-                <p className="text-white font-bold mb-1 text-sm">Ready to start earning?</p>
-                <p className="text-purple-200 text-xs mb-3">Join {platformStats.totalUsers > 0 ? (platformStats.totalUsers / 1000).toFixed(0) : "35"}k+ creators today</p>
-                <Button size="sm" asChild className="w-full bg-white hover:bg-purple-50" style={{ color: "#4B2D8F" }}>
-                  <Link href="/register">Create Free Account</Link>
-                </Button>
+                <div className="max-w-[600px]">
+                <h1 className="text-[28px] sm:text-[38px] md:text-[48px] font-black text-[#1a1a1a] leading-[1.08] tracking-tight mb-5">
+                  Source with{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f97316] to-[#7c2d12]">Viral Impact.</span>
+                </h1>
+                <p className="text-[14px] md:text-[16px] text-[#4b5563] font-medium leading-relaxed mb-8">
+                  Join the world's most powerful B2B platform built for creators. Verified suppliers, AI-driven sourcing, and viral commerce at your fingertips.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                  <Link href="/marketplace" className="w-full sm:w-auto order-1">
+                    <button className="w-full bg-[#f97316] text-white px-8 py-4 rounded-2xl text-[14px] font-black transition-all hover:bg-[#ea580c] hover:scale-[1.02] active:scale-95 shadow-xl shadow-[#f97316]/25">
+                      Explore Market →
+                    </button>
+                  </Link>
+                  <Link href="/register?role=influencer" className="w-full sm:w-auto order-2">
+                    <button className="w-full bg-white border-2 border-[#f0f0f0] text-[#4b5563] px-8 py-4 rounded-2xl text-[14px] font-bold transition-all hover:bg-[#fafafa] hover:border-[#f97316] hover:text-[#f97316] active:scale-95">
+                      Join as Creator
+                    </button>
+                  </Link>
+                </div>
+
+                {/* Stats: single compact row */}
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-3 py-4 px-4 bg-[#fff7ed]/50 border border-[#f97316]/10 rounded-xl mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-[#f97316]" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-black text-[#1a1a1a]">{platformStats.totalVendors}+ Vendors</p>
+                      <p className="text-[10px] text-[#4b5563] font-medium">Verified global suppliers</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                      <TrendingUp className="h-4 w-4 text-[#f97316]" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-black text-[#1a1a1a]">{platformStats.totalProducts}+ Products</p>
+                      <p className="text-[10px] text-[#4b5563] font-medium">Active trade listings</p>
+                    </div>
+                  </div>
+                  <Link href="/affiliates" className="ml-auto text-[11px] font-black text-[#f97316] uppercase tracking-widest hover:underline flex items-center gap-1 shrink-0">
+                    Learn more <ChevronRight className="h-3 w-3" />
+                  </Link>
+                </div>
+                </div>
+
+                {/* AI Search — larger box, category dropdown, AI Match, popular & quick filters */}
+                <div className="mt-8 w-full max-w-[720px]">
+                  <HeroSearch
+                    categories={(categories.length > 0 ? categories : [{ name: "Electronics", slug: "electronics" }, { name: "Apparel", slug: "apparel" }]).map((c: { name: string; slug: string }) => ({ label: c.name, slug: c.slug }))}
+                    trendingKeywords={["Electronics", "Apparel", "Custom manufacturing", "Verified suppliers", "Wholesale", "Dropshipping"]}
+                  />
+                </div>
               </div>
             </div>
+          </div>
 
-          </aside>
+          {/* Right Panel: Sign In (guest) or Welcome back + quick actions (logged in) */}
+          <HeroRightPanel profile={profile} />
         </div>
       </div>
 
-      {/* ── FULL-WIDTH CTA ─────────────────────────────────── */}
-      <section className="container-xl py-8">
-        <div className="relative rounded-3xl overflow-hidden px-10 py-14 text-center"
-          style={{ background: "linear-gradient(135deg, #4B2D8F 0%, #7C3AED 60%, #9333ea 100%)" }}>
-          <div className="absolute inset-0 opacity-[0.06]"
-            style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 0%, transparent 60%), radial-gradient(circle at 80% 50%, #F5A623 0%, transparent 60%)" }} />
-          <div className="relative z-10">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">Build Your Creator Empire</h2>
-            <div className="flex flex-wrap items-center justify-center gap-6 mb-8 text-sm text-purple-100">
-              {["Free Forever Plan", "No Setup Fees", "Cancel Anytime", "50+ Countries"].map((s, i) => (
-                <span key={i} className="flex items-center gap-1.5">
-                  <CheckCircle className="h-4 w-4 text-purple-300" /> {s}
+      {/* ── TRUST BAR ── */}
+      <div className="bg-white border-b border-[#f0f0f0] py-6 shadow-sm relative z-10">
+        <div className="max-w-[1280px] mx-auto px-6 flex flex-wrap items-center justify-between gap-y-8">
+          {[
+            { icon: <ShieldCheck className="h-8 w-8 text-[#f97316]" />, title: "Trade Assurance", desc: "Payment protection & peace of mind" },
+            { icon: <CheckCircle className="h-8 w-8 text-[#f97316]" />, title: "Verified Partners", desc: "Audited manufacturer profiles" },
+            { icon: <Ship className="h-8 w-8 text-[#f97316]" />, title: "Global Logistics", desc: "60+ freight partners worldwide" },
+            { icon: <DollarSign className="h-8 w-8 text-[#f97316]" />, title: "Secure Payouts", desc: "Multi-currency escrow protection" },
+            { icon: <Globe className="h-8 w-8 text-[#f97316]" />, title: "Creator Network", desc: "Reach influencers in 180+ regions" },
+          ].map((item, idx) => (
+            <div key={idx} className="flex items-center gap-4 px-6 md:border-r last:border-none border-[#f0f0f0] flex-1 min-w-[220px] justify-center md:justify-start">
+              <span className="shrink-0 p-2.5 bg-[#fff7ed] rounded-xl">{item.icon}</span>
+              <div className="leading-tight">
+                <h5 className="text-[14px] font-black text-[#1a1a1a] mb-0.5 tracking-tight">{item.title}</h5>
+                <p className="text-[11px] text-[#9ca3af] font-bold capitalize tracking-wider">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── MAIN CONTENT ── */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 space-y-12">
+
+        {/* Recommended Picks + Category Sidebar */}
+        <section className="grid grid-cols-1 lg:grid-cols-[1fr,260px] gap-6">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[20px] sm:text-[22px] font-extrabold text-[#1a1a1a] flex items-center gap-2.5 tracking-tight">
+                <Star className="h-5 w-5 text-[#f97316] fill-[#f97316]" /> Recommended Picks
+              </h2>
+              <Link href="/marketplace" className="text-[11px] font-bold text-[#f97316] capitalize tracking-widest flex items-center gap-1.5 hover:gap-2.5 transition-all">
+                Browse All <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+              {featured.map((p) => (
+                <ProductCardClient key={p.id} p={p as any} />
+              ))}
+            </div>
+          </div>
+          {/* Category Quick Access */}
+          <div className="hidden lg:block">
+            <div className="bg-white border border-[#eee] rounded-2xl overflow-hidden sticky top-[100px] shadow-sm hover:shadow-md transition-shadow">
+              <div className="px-5 py-4 bg-gradient-to-r from-[#f97316] to-[#ea580c] text-white">
+                <h3 className="text-[13px] font-bold capitalize tracking-widest">Shop by Category</h3>
+              </div>
+              <div className="p-2">
+                {sidebarCats.slice(0, 8).map((cat, idx) => (
+                  <div key={idx} className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-[#fff7ed] transition-all group">
+                    <div className="w-8 h-8 rounded-lg bg-[#fff7ed] group-hover:bg-[#f97316] flex items-center justify-center transition-colors">
+                      <span className="text-[#f97316] group-hover:text-white transition-colors">{cat.icon}</span>
+                    </div>
+                    <span className="text-[13px] font-semibold text-[#374151] group-hover:text-[#f97316] transition-colors flex-1">{cat.label}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-[#d1d5db] group-hover:text-[#f97316] transition-colors" />
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 pb-4">
+                <Link href="/marketplace" className="block w-full text-center py-2.5 text-[12px] font-bold text-[#f97316] border border-[#f97316]/20 rounded-xl hover:bg-[#fff7ed] transition-all">
+                  View All Categories →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Flash Deals + Trending Categories */}
+        <section className="grid grid-cols-1 lg:grid-cols-[1fr,260px] gap-6">
+          <div className="bg-white border border-[#eee] rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
+            <div className="bg-gradient-to-r from-[#9a3412] via-[#ea580c] to-[#f97316] px-6 py-4 flex items-center flex-wrap gap-4">
+              <div className="flex items-center gap-2.5 text-white text-[18px] font-extrabold tracking-tight">
+                <Zap className="h-5 w-5 fill-white stroke-none animate-pulse" /> Flash Trade Deals
+              </div>
+              <div className="flex items-center gap-2.5 ml-auto text-white">
+                <span className="text-[10px] font-bold text-white/60 capitalize tracking-widest hidden sm:inline">Ending In:</span>
+                <div className="flex items-center gap-1">
+                  {["08", "24", "15"].map((num, i) => (
+                    <React.Fragment key={i}>
+                      <div className="bg-white/15 backdrop-blur text-white px-2 py-1 text-[16px] font-extrabold rounded-lg min-w-[34px] text-center border border-white/20">
+                        {num}
+                      </div>
+                      {i < 2 && <span className="font-bold opacity-40 text-sm">:</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 p-4 ">
+              {trending.slice(0, 5).map((p, i) => (
+                <Link key={p.id} href={`/marketplace/${p.slug}`} className="group rounded-xl p-3 hover:bg-[#faf8ff] transition-all shadow-sm hover:shadow-md">
+                  <div className="aspect-square bg-[#f8f8fa] rounded-xl mb-3 flex items-center justify-center relative overflow-hidden border border-[#f0f0f0] group-hover:border-[#f97316]/20 transition-all">
+                    <Package className="h-8 w-8 text-[#e0e0e0] group-hover:text-[#f97316]/20" />
+                    <div className="absolute top-2 right-2 bg-[#f97316] text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                      -{Math.floor(Math.random() * 30 + 10)}%
+                    </div>
+                  </div>
+                  <h4 className="text-[12px] font-semibold text-[#1a1a1a] mb-1.5 line-clamp-1 group-hover:text-[#f97316] transition-colors">{p.name || "Refined Goods"}</h4>
+                  <div className="text-[15px] font-extrabold text-[#1a1a1a] mb-1">RWF {p.price.toLocaleString()}</div>
+                  <div className="text-[10px] text-[#9ca3af] line-through font-medium mb-2">RWF {(Number(p.price) * 1.3).toLocaleString()}</div>
+                  <div className="w-full h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden mb-1.5">
+                    <div className="h-full bg-gradient-to-r from-[#f97316] to-[#fb923c] rounded-full" style={{ width: `${80 - i * 10}%` }} />
+                  </div>
+                  <div className="text-[9px] text-[#9ca3af] font-bold capitalize tracking-wider">
+                    <span className="text-[#f97316]">{80 - i * 10}%</span> claimed
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+          {/* Trending Categories Card */}
+          <div className="hidden lg:flex flex-col gap-4">
+            <div className="bg-gradient-to-br from-[#280333] to-[#ef7b54] rounded-2xl p-6 text-white shadow-lg">
+              <h3 className="text-[14px] font-bold mb-1">🔥 Trending Now</h3>
+              <p className="text-[11px] text-white/60 mb-4">Hot categories this week</p>
+              <div className="space-y-2">
+                {["Solar Panels", "AI Hardware", "Organic Cotton", "EV Parts"].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5 hover:bg-white/20 cursor-pointer transition-all">
+                    <span className="text-[12px]">{["⚡", "🤖", "🌿", "🔋"][i]}</span>
+                    <span className="text-[12px] font-semibold flex-1">{item}</span>
+                    <span className="text-[10px] text-white/50 font-bold">+{[34, 28, 19, 15][i]}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white border border-[#eee] rounded-2xl p-5 shadow-sm">
+              <h3 className="text-[13px] font-bold text-[#1a1a1a] mb-3">💎 Top Suppliers</h3>
+              <div className="space-y-3">
+                {["TechVista Corp", "GreenLeaf Textiles", "NovaParts Ltd"].map((name, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#f97316] to-[#fb923c] flex items-center justify-center text-white text-[11px] font-bold">{name[0]}</div>
+                    <div className="flex-1">
+                      <p className="text-[12px] font-semibold text-[#1a1a1a]">{name}</p>
+                      <p className="text-[10px] text-[#9ca3af]">⭐ {(4.5 + i * 0.2).toFixed(1)} · Verified</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Explore Categories */}
+        <section className="bg-white border border-[#f0f0f0] rounded-2xl p-10 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between mb-10 relative z-10">
+            <h2 className="font-outfit text-[24px] font-black text-[#1a1a1a] flex items-center gap-3 capitalize tracking-tight">
+              <Menu className="h-6 w-6 text-[#f97316]" /> Global Industries
+            </h2>
+            <Link href="/marketplace" className="text-[12px] font-black text-[#f97316] capitalize tracking-[0.2em] flex items-center gap-2 hover:gap-3 transition-all border-b-2 border-[#f97316]/10 pb-1">
+              All Sections <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 relative z-10">
+            {[
+              { label: "Electronics", icon: <Zap className="h-7 w-7" />, count: "48K+", img: "/images/industries/electronics.png", color: "<from-orange-600/10 to-black/80" },
+              { label: "Fashion", icon: <Shirt className="h-7 w-7" />, count: "32K+", img: "/images/industries/fashion.png", color: "from-purple-600/10 to-black/80" },
+              { label: "Machinery", icon: <Settings className="h-7 w-7" />, count: "21K+", img: "/images/industries/machinery.png", color: "from-blue-600/10 to-black/80" },
+              { label: "Agriculture", icon: <Sprout className="h-7 w-7" />, count: "18K+", img: "/images/industries/agriculture.png", color: "from-green-600/10 to-black/80" },
+              { label: "Health", icon: <Pill className="h-7 w-7" />, count: "14K+", img: "/images/industries/health.png", color: "from-red-600/10 to-black/10" },
+              { label: "Digital", icon: <Laptop className="h-7 w-7" />, count: "11K+", img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800", color: "from-cyan-600/10 to-black/80" },
+            ].map((cat, i) => (
+              <div
+                key={i}
+                className="relative h-[220px] rounded-2xl overflow-hidden cursor-pointer group shadow-lg hover:shadow-2xl transition-all duration-500 active:scale-95"
+              >
+                {/* Background Image */}
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                  style={{ backgroundImage: `url('${cat.img}')` }}
+                />
+
+                {/* Gradient Overlay */}
+                <div className={cn("absolute inset-0 bg-gradient-to-t transition-opacity duration-500", cat.color)} />
+
+                {/* Content */}
+                <div className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-4 group-hover:bg-[#f97316] group-hover:scale-110 transition-all duration-300 text-white">
+                    {cat.icon}
+                  </div>
+                  <h4 className="text-[17px] font-black text-white mb-1 capitalize tracking-tight group-hover:text-[#f97316] transition-colors">{cat.label}</h4>
+                  <p className="text-[11px] text-white/70 font-black capitalize tracking-widest">{cat.count} Suppliers</p>
+                </div>
+
+                {/* Hover Glow */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                  <div className="absolute inset-0 bg-[#f97316]/20 mix-blend-overlay" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Affiliate & Influencer Hybrid section */}
+        <div className="bg-white border border-[#f0f0f0] rounded-2xl overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
+          <div className="bg-gradient-to-br from-[#1a1a1a] via-[#7c2d12] to-[#f97316] p-8 md:p-16 relative overflow-hidden text-white flex flex-col justify-center">
+            <div className="absolute right-[-40px] bottom-[-40px] text-[180px] opacity-[0.03] leading-none font-black">$</div>
+            <div className="bg-white/10 backdrop-blur-md text-white border border-white/10 px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.2em] capitalize mb-6 inline-block w-fit">
+              Partner with Jimvio
+            </div>
+            <h3 className="font-outfit text-[28px] md:text-[36px] font-black leading-tight mb-6 capitalize tracking-tight">Turn Your Network<br />Into Global Trade</h3>
+            <p className="text-[14px] md:text-[16px] text-white/70 mb-10 leading-relaxed font-bold">Earn high-ticket commissions on every bulk deal referred through our creator-friendly B2B ecosystem.</p>
+            <div className="space-y-4 mb-12">
+              {["12% Commission Cap", "Lifetime Referral Tracking", "Creator Studio Tools"].map(t => (
+                <div key={t} className="flex items-center gap-4 text-[13px] md:text-[15px] font-bold">
+                  <div className="w-6 h-6 rounded-lg bg-white/10 text-white flex items-center justify-center text-[12px] font-black border border-white/10">✓</div> {t}
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button className="w-full sm:w-auto bg-white text-[#f97316] hover:bg-[#fff7ed] font-black h-14 px-10 rounded-xl text-[14px] md:text-[15px] shadow-2xl">Start Earning</Button>
+              <Button variant="outline" className="w-full sm:w-auto border-2 border-white/20 text-white hover:bg-white/10 h-14 px-10 rounded-xl font-bold text-[14px] md:text-[15px]">Creator Hub</Button>
+            </div>
+          </div>
+          <div className="bg-[#fffbf5] p-8 md:p-16 flex flex-col justify-center">
+            <h3 className="font-outfit text-[22px] md:text-[26px] font-black text-[#1a1a1a] mb-3 capitalize tracking-tight">Active Campaigns</h3>
+            <p className="text-[14px] md:text-[15px] text-[#6b7280] mb-8 md:mb-10 font-bold">Bridging the gap between major manufacturers and authentic voices.</p>
+            <div className="flex flex-wrap gap-2 mb-10">
+              {["Tech", "Industry", "SaaS", "Direct", "Agri"].map((t, i) => (
+                <span key={i} className={cn("px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[11px] md:text-[12px] font-black border capitalize tracking-widest transition-all cursor-pointer", i === 0 ? "bg-[#f97316] text-white border-[#f97316] shadow-lg shadow-orange-500/20" : "bg-white text-[#4b5563] border-[#f0f0f0] hover:border-[#f97316] hover:text-[#f97316]")}>
+                  {t}
                 </span>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button size="lg" asChild className="bg-white hover:bg-purple-50 shadow-card-lg" style={{ color: "#4B2D8F" }}>
-                <Link href="/register">Create Free Account <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button size="lg" asChild variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:text-white">
-                <Link href="/pricing">View Pricing</Link>
-              </Button>
+            <div className="bg-white border border-[#f0f0f0] rounded-2xl p-6 flex items-center gap-6 shadow-sm mb-10 hover:shadow-xl transition-all border-l-4 border-l-[#f97316]">
+              <Avatar className="h-14 w-14 border-4 border-[#f97316]/5 ring-1 ring-[#f0f0f0]">
+                <AvatarFallback className="bg-[#f97316] text-white font-black text-[18px]">JK</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="text-[16px] font-black text-[#1a1a1a]">Julian K.</div>
+                <div className="text-[12px] text-[#9ca3af] font-black capitalize tracking-widest">Tech Strategist · 1.2M</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[22px] font-black text-[#f97316] font-outfit">$8,900</div>
+                <p className="text-[9px] text-[#9ca3af] font-black capitalize tracking-[0.2em]">Monthly Avg</p>
+              </div>
             </div>
+            <Button className="w-full h-14 bg-[#f97316] hover:bg-[#ea580c] text-white font-black rounded-xl text-[15px] shadow-lg shadow-orange-500/20">Access Dashboard →</Button>
           </div>
         </div>
-      </section>
-    </div>
-  );
-}
 
-// ─────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────
-
-function ProductCard({ product: p }: { product: Record<string, unknown> }) {
-  const images   = (p.images as string[]) ?? [];
-  const imgSrc   = images[0] ?? null;
-  const vendor   = p.vendors as Record<string, unknown> | null;
-  const price    = Number(p.price ?? 0);
-  const original = p.compare_at_price ? Number(p.compare_at_price) : null;
-  const discount = original ? Math.round(((original - price) / original) * 100) : 0;
-  const rating   = Number(p.rating ?? 0);
-  const earn     = p.affiliate_enabled ? `${p.affiliate_commission_rate ?? 10}%` : null;
-
-  return (
-    <Link href={`/marketplace/${p.slug as string}`}>
-      <div className="bg-surface rounded-2xl border border-base shadow-card hover:shadow-card-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group cursor-pointer">
-        <div className="relative aspect-video bg-gradient-to-br from-primary-50 to-accent-50 dark:from-primary-900/20 dark:to-accent-900/20 flex items-center justify-center overflow-hidden">
-          {imgSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imgSrc} alt={p.name as string} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          ) : (
-            <span className="text-5xl group-hover:scale-110 transition-transform duration-300">📦</span>
-          )}
-          {discount > 0 && <span className="absolute top-2 left-2 badge badge-red text-xs font-bold">{discount}% OFF</span>}
-          {earn && <span className="absolute top-2 right-2 badge badge-green text-xs"><TrendingUp className="h-2.5 w-2.5" /> {earn}</span>}
-          {!!p.is_featured && <span className="absolute bottom-2 left-2 badge badge-purple text-xs">Featured</span>}
-        </div>
-        <div className="p-3">
-          <p className="text-xs text-muted-c mb-0.5 truncate">{vendor?.business_name as string ?? "Jimvio Store"}</p>
-          <h3 className="font-semibold text-sm text-base mb-2 line-clamp-2 leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">
-            {p.name as string}
-          </h3>
-          {rating > 0 && (
-            <div className="flex items-center gap-1 mb-2">
-              {[1,2,3,4,5].map(i => <Star key={i} className={`h-3 w-3 ${i <= Math.floor(rating) ? "text-accent-500 fill-accent-500" : "text-muted-c/30"}`} />)}
-              <span className="text-xs text-muted-c ml-0.5">({(p.review_count as number)?.toLocaleString() ?? 0})</span>
+        {/* Communities */}
+        <section>
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="font-outfit text-[24px] font-black text-[#1a1a1a] flex items-center gap-3 capitalize tracking-tight">
+              <MessageCircle className="h-6 w-6 text-[#f97316]" /> Trading Communities
+            </h2>
+            <Link href="/communities" className="text-[12px] font-black text-[#f97316] capitalize tracking-[0.2em] flex items-center gap-2 hover:gap-3 transition-all border-b-2 border-[#f97316]/10 pb-1">
+              Join Conversation <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.3fr] gap-8">
+            <div className="space-y-3">
+              {communities.map((c: any) => (
+                <div key={c.id} className="bg-white border border-[#f0f0f0] rounded-xl p-5 flex items-center gap-5 cursor-pointer hover:bg-[#fffbf5] border-l-[6px] border-l-transparent hover:border-l-[#f97316] transition-all group shadow-sm">
+                  <div className="w-14 h-14 rounded-xl bg-[#fafafa] flex items-center justify-center group-hover:bg-[#f97316]/5 transition-colors shrink-0">
+                    <Users className="h-7 w-7 text-[#9ca3af] group-hover:text-[#f97316]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-[15px] font-black text-[#1a1a1a] leading-tight mb-1">{c.name}</h4>
+                    <p className="text-[12px] text-[#6b7280] truncate font-bold capitalize tracking-tight">{c.description || "B2B Insights & Networking"}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[16px] font-black text-[#f97316] font-outfit">{c.member_count?.toLocaleString() || "1K+"}</div>
+                    <div className="text-[10px] text-green-500 font-black flex items-center justify-end gap-1.5 capitalize tracking-widest">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> {Math.floor(Math.random() * 100 + 20)} active
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-          <div className="flex items-center justify-between">
+            <div className="bg-[#1a1a1a] rounded-2xl p-8 text-white min-h-[400px] flex flex-col shadow-2xl relative overflow-hidden border border-white/5">
+              <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                <MessageCircle className="h-40 w-40 text-white" />
+              </div>
+              <div className="flex items-center gap-2.5 text-[14px] font-black mb-8 text-white/90 capitalize tracking-widest relative z-10">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" /> Live Insight: Electronics Tech
+              </div>
+              <div className="space-y-6 mb-10 flex-1 overflow-y-auto no-scrollbar relative z-10">
+                {[
+                  { name: "Jason K.", loc: "Taipei", msg: "Anyone seeing lead time increases on MLCCs? Our distributor pushed to 16 weeks.", color: "bg-[#f97316]" },
+                  { name: "Sara L.", loc: "Shenzhen", msg: "Verified. We switched to TDK last quarter. DM for supplier IDs.", color: "bg-[#9a3412]", me: true },
+                  { name: "Marco R.", loc: "Milan", msg: "Vishay has stock too. Better price but 10K+ min pcs.", color: "bg-[#f97316]" },
+                ].map((m, i) => (
+                  <div key={i} className={cn("flex gap-4 max-w-[85%]", m.me ? "ml-auto flex-row-reverse" : "")}>
+                    <Avatar className="h-9 w-9 shrink-0 ring-2 ring-white/10">
+                      <AvatarFallback className={cn("text-[11px] font-black text-white", m.color)}>{m.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                    </Avatar>
+                    <div className={cn("p-4 rounded-2xl", m.me ? "bg-[#f97316] rounded-tr-none text-white shadow-xl" : "bg-white/5 backdrop-blur-md rounded-tl-none border border-white/10")}>
+                      <span className="block text-[10px] font-black text-white/30 capitalize tracking-[0.2em] mb-2">{m.name} · {m.loc}</span>
+                      <p className="text-[14px] font-bold leading-relaxed">{m.msg}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2.5 relative z-10">
+                {["#components", "#MLCC", "#sourcing", "#supply-chain"].map(t => (
+                  <span key={t} className="px-4 py-1.5 bg-white/5 rounded-full text-[11px] text-white/40 font-black capitalize tracking-widest border border-white/5 hover:bg-white/10 cursor-pointer transition-all">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Creators Archive - Premium Redesign */}
+        <section className="relative py-12">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f97316]/2 via-transparent to-transparent pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 relative z-10">
             <div>
-              <span className="font-bold text-primary-900 dark:text-primary-300">{formatCurrency(price)}</span>
-              {original && <span className="text-xs text-muted-c line-through ml-1.5">{formatCurrency(original)}</span>}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-[2px] w-8 bg-[#f97316]" />
+                <span className="text-[10px] font-black capitalize tracking-[0.4em] text-[#f97316]">Vault & History</span>
+              </div>
+              <h2 className="font-outfit text-[32px] md:text-[40px] font-black text-[#1a1a1a] flex items-center gap-4 leading-none capitalize tracking-tighter">
+                Creators <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1a1a1a] to-[#6b7280]">Archive</span>
+              </h2>
+            </div>
+            
+            <Link href="/dashboard/clippings" className="group">
+              <div className="bg-white border-2 border-[#f0f0f0] hover:border-[#f97316] px-8 py-3 rounded-2xl flex items-center gap-3 transition-all shadow-xl shadow-black/5 hover:translate-y-[-4px] active:scale-95 group-hover:bg-[#f97316]/5">
+                <Bookmark className="h-5 w-5 text-[#f97316] fill-[#f97316]/10 group-hover:fill-[#f97316]/30 transition-colors" />
+                <span className="text-[13px] font-black text-[#1a1a1a] capitalize tracking-widest">My Library</span>
+                <div className="w-8 h-8 rounded-full bg-[#f97316] flex items-center justify-center text-white scale-90 group-hover:scale-100 transition-transform">
+                  <ChevronRight className="h-4 w-4" />
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
+            {viralClips.map((clip: any) => (
+              <div key={clip.id} className="group relative bg-[#1a1a1a] rounded-[28px] overflow-hidden shadow-2xl transition-all duration-500 hover:translate-y-[-8px] border border-white/5">
+                {/* Image / Thumbnail Area */}
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${clip.thumbnail_url || "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop"})` }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent opacity-90" />
+                  
+                  {/* Floating Interactive Elements */}
+                  <div className="absolute top-5 left-5 right-5 flex justify-between items-center z-20">
+                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                       <span className="text-[10px] font-black text-white capitalize tracking-widest">{clip.total_views?.toLocaleString() || "1.2K"} Live Views</span>
+                    </div>
+                    <button className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-[#f97316] transition-all">
+                       <Bookmark className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white scale-90 group-hover:scale-100 transition-transform duration-500">
+                      <PlayCircle className="h-8 w-8 fill-white" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="p-8 relative z-20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Avatar className="h-8 w-8 border-2 border-white/10 ring-2 ring-[#f97316]/20">
+                      <AvatarFallback className="bg-[#f97316] text-[10px] font-black text-white">{clip.vendors?.business_name?.[0] || "V"}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black text-white leading-none mb-0.5">{clip.vendors?.business_name || "Verified Supplier"}</span>
+                      <span className="text-[9px] text-white/40 font-bold capitalize tracking-widest">Master Partner</span>
+                    </div>
+                    {clip.vendors?.id && (
+                      <FollowButton 
+                        vendorId={clip.vendors.id} 
+                        variant="ghost" 
+                        className="ml-auto h-7 px-2 text-[10px] text-[var(--color-accent)] border-[var(--color-accent)]/20 hover:bg-[var(--color-accent)] hover:text-white" 
+                      />
+                    )}
+                  </div>
+                  
+                  <h4 className="text-[18px] md:text-[20px] font-black text-white leading-[1.2] mb-6 group-hover:text-[#f97316] transition-colors line-clamp-2">
+                    {clip.title}
+                  </h4>
+
+                  <div className="flex items-center gap-4 pt-6 mt-auto border-t border-white/5">
+                    {clip.products ? (
+                      <Link href={`/marketplace/${clip.products.slug}`} className="flex-1 group/prod">
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3 hover:bg-[#f97316]/10 hover:border-[#f97316]/30 transition-all">
+                          <div className="w-10 h-10 rounded-lg bg-[#f97316]/20 flex items-center justify-center text-[#f97316] overflow-hidden shrink-0">
+                            {clip.products.images && clip.products.images.length > 0 ? (
+                              <img 
+                                src={clip.products.images[0]} 
+                                alt={clip.products.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <ShoppingCart className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black text-white/40 capitalize tracking-widest leading-none mb-1">Featured Item</p>
+                            <p className="text-[13px] font-bold text-white truncate">{clip.products.name}</p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[13px] font-black text-[#f97316]">${clip.products.price}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-[#f97316] to-[#7c2d12] w-2/3" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Decorative Glow */}
+                <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-[#f97316]/10 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Market Intelligence */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="bg-white border border-[#f0f0f0] rounded-2xl p-10 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-2 h-full bg-[#f97316]" />
+            <h4 className="font-outfit text-[22px] font-black text-[#1a1a1a] mb-10 flex items-center gap-3 capitalize tracking-tight">
+              <BarChart2 className="h-6 w-6 text-[#f97316]" /> Market Pulse
+            </h4>
+            <div className="space-y-8">
+              {(categories.length > 0 ? categories.slice(0, 4) : [
+                { name: "Electronics", product_count: 80 },
+                { name: "Machinery", product_count: 35 },
+                { name: "Textiles", product_count: 65 },
+                { name: "Health", product_count: 90 },
+              ]).map((cat: any, i: number) => (
+                <div key={i} className="flex items-center gap-8 group">
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-[14px] font-black text-[#1a1a1a] capitalize tracking-tight">{cat.name} Market</span>
+                      <span className={cn("text-[11px] font-black px-2 py-0.5 rounded capitalize tracking-widest bg-green-100 text-green-600")}>
+                        ↑ {8 + i}%
+                      </span>
+                    </div>
+                    <div className="h-2.5 w-full bg-[#fafafa] rounded-full overflow-hidden border border-[#f0f0f0]">
+                      <div className={cn("h-full rounded-full transition-all duration-1000 bg-[#f97316]")} style={{ width: `${60 + (i * 10)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#f0f0f0] rounded-2xl p-10 shadow-sm">
+            <h4 className="font-outfit text-[22px] font-black text-[#1a1a1a] mb-8 flex items-center gap-3 capitalize tracking-tight">
+              <TrendingUp className="h-6 w-6 text-[#f97316]" /> Hot Sourcing
+            </h4>
+            <div className="flex flex-wrap gap-2.5 mb-10">
+              {(categories.length > 0 ? categories.slice(0, 8) : []).map((cat: any) => (
+                <Link href={`/marketplace?category=${cat.slug}`} key={cat.id}>
+                  <span className="px-5 py-2.5 bg-[#fafafa] border border-[#f0f0f0] rounded-xl text-[12px] font-black text-[#4b5563] hover:bg-[#fff7ed] hover:border-[#f97316] hover:text-[#f97316] cursor-pointer transition-all capitalize tracking-widest">
+                    {cat.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <h4 className="text-[11px] font-black text-[#9ca3af] capitalize tracking-[0.25em] mb-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-[#f0f0f0]" /> Active Leads <div className="h-px flex-1 bg-[#f0f0f0]" />
+            </h4>
+            <div className="space-y-3">
+              {(trending.length > 0 ? trending.slice(0, 3) : []).map((prod: any, i: number) => (
+                <Link key={i} href={`/marketplace/${prod.slug}`}>
+                  <div className="bg-white border border-[#f0f0f0] p-5 rounded-xl flex items-center gap-5 hover:bg-[#fffbf5] transition-all cursor-pointer group shadow-sm hover:border-[#f97316]/30 mb-2">
+                    <div className="w-12 h-12 rounded-xl bg-[#fff7ed] flex items-center justify-center text-[#f97316] transition-transform group-hover:scale-110 shadow-inner overflow-hidden">
+                      {prod.images?.[0] ? (
+                        <img src={prod.images[0]} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        <Package className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h5 className="text-[14px] font-black text-[#1a1a1a] mb-0.5 leading-tight truncate">{prod.name}</h5>
+                      <p className="text-[11px] text-[#9ca3af] font-bold capitalize tracking-widest">${prod.price} · {prod.vendors?.business_name || "Verified"}</p>
+                    </div>
+                    <span className="text-[10px] font-black text-[#f97316] p-1 bg-[#fff7ed] rounded capitalize tracking-wider">Live</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
+
       </div>
-    </Link>
-  );
-}
 
-function ClipCard({ clip: c }: { clip: Record<string, unknown> }) {
-  const product = c.products as Record<string, unknown> | null;
-  const vendor  = c.vendors  as Record<string, unknown> | null;
-
-  return (
-    <div className="bg-surface rounded-2xl border border-base shadow-card overflow-hidden group">
-      <div className="relative aspect-video flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg, #1a1030, #2d1f5e)" }}>
-        {c.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.thumbnail_url as string} alt={c.title as string} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-5xl">🎬</span>
-        )}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 hover:bg-white/30 transition-all cursor-pointer">
-            <Play className="h-5 w-5 text-white ml-0.5" />
+      {/* How it Works Strip */}
+      <div className="bg-[#fffbf5] border-y border-[#f97316]/5 py-24">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="text-center max-w-[700px] mx-auto mb-20">
+            <h2 className="font-outfit text-[36px] font-black text-[#1a1a1a] mb-4 capitalize tracking-tight">The Jimvio Protocol</h2>
+            <p className="text-[16px] text-[#6b7280] font-bold capitalize tracking-widest leading-relaxed">Simplifying Global Trade for the Modern Era</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative">
+            <div className="absolute top-14 left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-[#f97316] via-[#f97316] to-transparent hidden lg:block opacity-10 border-dashed" />
+            {[
+              { icon: <UserPlus />, title: "Digital ID", desc: "One unified account for vendors, buyers, and creators." },
+              { icon: <ArrowRight />, title: "AI Search", desc: "Find verified partners in seconds using our neural matching." },
+              { icon: <Search />, title: "Smart Contracts", desc: "Automated agreements and secure multi-currency escrow." },
+              { icon: <ShieldCheck />, title: "Global Sync", desc: "Real-time tracking and logistics integration across 180 countries." },
+            ].map((s, idx) => (
+              <div key={idx} className="text-center group relative z-10">
+                <div className="w-20 h-20 rounded-2xl bg-[#f97316] text-white flex items-center justify-center font-outfit text-[28px] font-black mx-auto mb-8 shadow-2xl shadow-orange-500/30 group-hover:scale-110 transition-transform leading-none hover:rotate-6">
+                  0{idx + 1}
+                </div>
+                <h4 className="text-[17px] font-black text-[#1a1a1a] mb-4 capitalize tracking-tight">{s.title}</h4>
+                <p className="text-[14px] text-[#6b7280] font-bold leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-20">
+            <Button size="lg" className="bg-[#f97316] hover:bg-[#ea580c] text-white font-black px-12 h-16 rounded-xl text-[16px] shadow-2xl shadow-orange-500/30 hover:-translate-y-2 transition-all capitalize tracking-widest active:scale-95">
+              Initialize Trade Access
+            </Button>
           </div>
         </div>
-        <div className="absolute bottom-2 right-2">
-          <span className="text-xs bg-black/40 text-white rounded px-1.5 py-0.5 backdrop-blur-sm">
-            {((c.total_views as number) ?? 0).toLocaleString()} views
-          </span>
+      </div>
+
+      {/* App Promo */}
+      <div className="bg-gradient-to-br from-[#1a1a1a] via-[#431407] to-[#9a3412] py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none" />
+        <div className="max-w-[1280px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-20 relative z-10">
+          <div className="flex-1 max-w-[600px]">
+            <h3 className="font-outfit text-[42px] font-black text-white mb-6 leading-tight capitalize tracking-tight">Trade Anywhere.<br />Global Mastery.</h3>
+            <p className="text-[17px] text-white/50 font-bold leading-relaxed mb-12 capitalize tracking-wide">The Jimvio mobile application integrates every facet of the creator-commerce ecosystem into a single high-performance interface.</p>
+            <div className="flex flex-wrap gap-5">
+              {[
+                { name: "App Store", sub: "Available on", icon: <Lock className="h-6 w-6" /> },
+                { name: "Google Play", sub: "Get it on", icon: <PlayCircle className="h-6 w-6" /> }
+              ].map(btn => (
+                <div key={btn.name} className="flex items-center gap-4 px-8 py-3.5 bg-white/5 border-2 border-white/10 rounded-xl hover:bg-[#f97316] hover:border-[#f97316] cursor-pointer transition-all text-white group shadow-2xl">
+                  <div className="shrink-0 group-hover:scale-110 transition-transform">{btn.icon}</div>
+                  <div className="leading-tight">
+                    <div className="text-[10px] text-white/40 font-black capitalize tracking-[0.2em]">{btn.sub}</div>
+                    <div className="text-[18px] font-black tracking-tight">{btn.name}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="text-center md:text-right">
+            <div className="w-32 h-32 bg-white/5 backdrop-blur-xl border-2 border-white/10 rounded-2xl flex items-center justify-center mx-auto md:ml-auto mb-5 shadow-inner group cursor-pointer hover:border-[#f97316] transition-colors">
+              <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center">
+                {/* QR Placeholder */}
+                <div className="w-16 h-16 bg-[#f97316] rounded flex items-center justify-center">
+                  <Zap className="h-8 w-8 text-white fill-white stroke-none" />
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] font-black text-white/40 capitalize tracking-[0.3em] leading-tight">Sync Your<br />Device</p>
+          </div>
         </div>
       </div>
-      <div className="p-3">
-        <p className="text-xs font-medium text-base mb-0.5 line-clamp-1">{c.title as string}</p>
-        <p className="text-xs text-muted-c mb-2">{vendor?.business_name as string ?? "Jimvio Vendor"}</p>
-        {product && (
-          <p className="text-xs text-muted-c mb-2">
-            Product: <span className="font-medium text-base">{product.name as string}</span>
-          </p>
-        )}
-        <button
-          className="w-full py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95"
-          style={{ background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" }}
-        >
-          <Megaphone className="h-3 w-3 inline-block mr-1" /> Promote
-        </button>
-      </div>
-    </div>
-  );
-}
 
-function EmptyProductsCard({ label, sub, href }: { label: string; sub: string; href: string }) {
-  return (
-    <div className="col-span-4 bg-subtle border border-base rounded-2xl p-10 text-center">
-      <div className="text-4xl mb-3">📦</div>
-      <p className="font-semibold text-base mb-1">{label}</p>
-      <p className="text-sm text-muted-c mb-4">{sub}</p>
-      <Button size="sm" asChild><Link href={href}>Get Started</Link></Button>
     </div>
   );
 }

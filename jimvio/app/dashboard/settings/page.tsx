@@ -99,12 +99,12 @@ export default function SettingsPage() {
     });
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent)]" /></div>;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
+    <div className="space-y-5 animate-fade-in max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-base">Settings</h1>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Settings</h1>
         <p className="text-sm text-muted-c mt-0.5">Manage your account and store settings</p>
       </div>
 
@@ -119,8 +119,8 @@ export default function SettingsPage() {
         {/* Profile Tab */}
         <TabsContent value="profile">
           <Card>
-            <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Personal Profile</CardTitle></CardHeader>
-            <CardContent className="px-5 pb-5 pt-0 space-y-4">
+        <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Personal Profile</CardTitle></CardHeader>
+        <CardContent className="px-4 pb-4 pt-0 space-y-4">
               {saved === "profile" && (
                 <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300">
                   <CheckCircle className="h-4 w-4" /> Profile saved!
@@ -143,8 +143,8 @@ export default function SettingsPage() {
         {vendor && (
           <TabsContent value="store">
             <Card>
-              <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Store Settings</CardTitle></CardHeader>
-              <CardContent className="px-5 pb-5 pt-0 space-y-4">
+              <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Store Settings</CardTitle></CardHeader>
+              <CardContent className="px-4 pb-4 pt-0 space-y-4">
                 {saved === "vendor" && (
                   <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300">
                     <CheckCircle className="h-4 w-4" /> Store settings saved!
@@ -161,9 +161,9 @@ export default function SettingsPage() {
                 <h3 className="text-sm font-semibold text-base">Payout Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-base block mb-1.5">Payout Method</label>
+                    <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Payout Method</label>
                     <select value={vendor.payout_method} onChange={e => setVendor(v => v ? { ...v, payout_method: e.target.value } : v)}
-                      className="w-full h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all">
+                      className="w-full h-10 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 transition-all">
                       <option value="irembopay">Irembopay</option>
                       <option value="mtn">MTN MoMo</option>
                       <option value="airtel">Airtel Money</option>
@@ -173,15 +173,15 @@ export default function SettingsPage() {
                   <Input label="Payout Account" value={vendor.payout_account} onChange={e => setVendor(v => v ? { ...v, payout_account: e.target.value } : v)} />
                 </div>
                 <div className="h-px bg-border-base" />
-                <h3 className="text-sm font-semibold text-base">Affiliate Settings</h3>
-                <div className="flex items-center justify-between p-3.5 bg-subtle rounded-xl border border-base">
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Affiliate Settings</h3>
+                <div className="flex items-center justify-between p-3 bg-subtle rounded-lg border border-base">
                   <div>
-                    <p className="text-sm font-medium text-base">Affiliate Marketing</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">Affiliate Marketing</p>
                     <p className="text-xs text-muted-c mt-0.5">Allow affiliates to promote your products</p>
                   </div>
                   <label className="cursor-pointer">
                     <input type="checkbox" className="sr-only" checked={vendor.affiliate_enabled} onChange={e => setVendor(v => v ? { ...v, affiliate_enabled: e.target.checked } : v)} />
-                    <div className={`w-11 h-6 rounded-full transition-colors ${vendor.affiliate_enabled ? "bg-primary-600" : "bg-muted"}`}>
+                    <div className={`w-11 h-6 rounded-full transition-colors ${vendor.affiliate_enabled ? "bg-[var(--color-accent)]" : "bg-[var(--color-surface-secondary)]"}`}>
                       <div className={`w-4 h-4 rounded-full bg-white shadow-sm m-1 transition-transform ${vendor.affiliate_enabled ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </label>
@@ -198,8 +198,8 @@ export default function SettingsPage() {
         {/* Notifications Tab */}
         <TabsContent value="notifications">
           <Card>
-            <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Notification Preferences</CardTitle></CardHeader>
-            <CardContent className="px-5 pb-5 pt-0 space-y-3">
+            <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Notification Preferences</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0 space-y-3">
               {[
                 { label: "New Orders",         sub: "Get notified when you receive a new order" },
                 { label: "Payment Received",   sub: "Get notified when a payment is processed" },
@@ -214,7 +214,7 @@ export default function SettingsPage() {
                   </div>
                   <label className="cursor-pointer">
                     <input type="checkbox" className="sr-only" defaultChecked />
-                    <div className="w-11 h-6 rounded-full bg-primary-600">
+                    <div className="w-11 h-6 rounded-full bg-[var(--color-accent)]">
                       <div className="w-4 h-4 rounded-full bg-white shadow-sm m-1 translate-x-5" />
                     </div>
                   </label>
@@ -227,10 +227,10 @@ export default function SettingsPage() {
         {/* Security Tab */}
         <TabsContent value="security">
           <Card>
-            <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Security Settings</CardTitle></CardHeader>
-            <CardContent className="px-5 pb-5 pt-0 space-y-4">
+            <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Security Settings</CardTitle></CardHeader>
+            <CardContent className="px-4 pb-4 pt-0 space-y-4">
               <div>
-                <h3 className="text-sm font-semibold text-base mb-3">Change Password</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Change Password</h3>
                 <div className="space-y-3">
                   <Input label="New Password" type="password" placeholder="Min. 8 characters" />
                   <Input label="Confirm New Password" type="password" placeholder="Repeat new password" />
@@ -239,7 +239,7 @@ export default function SettingsPage() {
               </div>
               <div className="h-px bg-border-base" />
               <div>
-                <h3 className="text-sm font-semibold text-base mb-1">Danger Zone</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-1">Danger Zone</h3>
                 <p className="text-xs text-muted-c mb-3">Permanent actions that cannot be undone</p>
                 <Button variant="destructive" size="sm">Delete Account</Button>
               </div>

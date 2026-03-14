@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -24,3 +25,12 @@ export async function createClient() {
     },
   });
 }
+
+/**
+ * Memoized version of getUser to avoid redundant network calls during a single request.
+ * Useful for sharing user data between Middleware, Layouts, and Pages.
+ */
+export const getCachedUser = cache(async () => {
+  const supabase = await createClient();
+  return await supabase.auth.getUser();
+});

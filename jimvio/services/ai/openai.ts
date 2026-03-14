@@ -1,6 +1,19 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _openai: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey || apiKey.trim() === "") {
+      throw new Error(
+        "OPENAI_API_KEY is not set. Add it to .env or configure the OpenAI client with an apiKey option."
+      );
+    }
+    _openai = new OpenAI({ apiKey });
+  }
+  return _openai;
+}
 
 export interface ProductDescriptionParams {
   productName: string;
@@ -46,7 +59,7 @@ Write a product description that:
 
 Return ONLY the product description, no additional text.`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
@@ -88,7 +101,7 @@ Return a JSON object with these exact keys:
 
 Make it compelling, specific, and conversion-focused.`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.8,
@@ -123,7 +136,7 @@ Return a JSON object with:
   "tips": ["tip 1", "tip 2", "tip 3"]
 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.6,
@@ -161,7 +174,7 @@ Return JSON with:
   ]
 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.8,
@@ -174,7 +187,7 @@ Return JSON with:
   }
 
   async chat(messages: Array<{ role: "user" | "assistant" | "system"; content: string }>) {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {

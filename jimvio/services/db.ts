@@ -1,13 +1,10 @@
-/**
- * Central Supabase service layer — all DB queries live here.
- * Server-side only (uses "server" client).
- */
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { cache } from "react";
 
-export async function getDB() {
+export const getDB = cache(async () => {
   return createClient();
-}
+});
 
 export function getAdminDB() {
   return createAdminClient(
@@ -20,7 +17,7 @@ export function getAdminDB() {
 // ─────────────────────────────────────────────────────────────
 // CATEGORIES
 // ─────────────────────────────────────────────────────────────
-export async function getCategories() {
+export const getCategories = cache(async () => {
   const db = await getDB();
   const { data } = await db
     .from("product_categories")
@@ -28,7 +25,7 @@ export async function getCategories() {
     .eq("is_active", true)
     .order("sort_order");
   return data ?? [];
-}
+});
 
 // ─────────────────────────────────────────────────────────────
 // PRODUCTS
@@ -114,6 +111,22 @@ export async function getTrendingProducts(limit = 8) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// USER NAVBAR COUNTS
+// ─────────────────────────────────────────────────────────────
+export async function getUserNavbarCounts(userId: string) {
+  const db = await getDB();
+  const [cart, notifications] = await Promise.all([
+    db.from("orders").select("id", { count: "exact", head: true }).eq("buyer_id", userId).eq("status", "pending"),
+    db.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("is_read", false),
+  ]);
+
+  return {
+    cartCount: cart.count ?? 0,
+    chatCount: notifications.count ?? 0, // Mocking chat with unread notifications for now
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
 // VENDOR PRODUCTS (for dashboard — bypasses active filter)
 // ─────────────────────────────────────────────────────────────
 export async function getVendorProducts(vendorId: string) {
@@ -137,10 +150,11 @@ export async function getTopVendors(limit = 4) {
   const db = await getDB();
   const { data } = await db
     .from("vendors")
-    .select("id, business_name, business_slug, business_logo, rating, total_sales, business_country")
+    .select("id, business_name, business_slug, business_logo, rating, total_sales, business_country, created_at")
     .eq("is_active", true)
-    .eq("verification_status", "verified")
+    // For homepage, show any active vendors, even if not yet fully verified
     .order("total_sales", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(limit);
   return data ?? [];
 }
@@ -173,15 +187,116 @@ export async function getCommunities(limit = 12) {
   const { data } = await db
     .from("communities")
     .select(`
-      id, name, slug, description, avatar_url, category, tags,
+      id, name, slug, description, avatar_url, cover_image, category, tags,
       is_private, is_featured, member_count, post_count,
       monthly_price, yearly_price, lifetime_price, currency,
+      created_at,
       profiles ( full_name, avatar_url )
     `)
     .eq("is_active", true)
     .order("member_count", { ascending: false })
     .limit(limit);
   return data ?? [];
+}
+
+export async function getCommunityBySlug(slug: string) {
+  const db = await getDB();
+  const { data } = await db
+    .from("communities")
+    .select(`
+      *,
+      profiles ( full_name, avatar_url, email )
+    `)
+    .eq("slug", slug)
+    .single();
+  return data;
+}
+
+export async function getCommunityPosts(communityId: string, limit = 20) {
+  const db = await getDB();
+  const { data } = await db
+    .from("community_posts")
+    .select(`
+      *,
+      profiles ( full_name, avatar_url ),
+      community_post_comments ( id, body, like_count, created_at, profiles ( full_name, avatar_url ) )
+    `)
+    .eq("community_id", communityId)
+    .eq("is_published", true)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function getCommunityMembers(communityId: string, limit = 50) {
+  const db = await getDB();
+  const { data } = await db
+    .from("community_members")
+    .select(`
+      id, role, subscription_plan, subscription_status, subscribed_at, created_at,
+      profiles ( id, full_name, avatar_url, email )
+    `)
+    .eq("community_id", communityId)
+    .eq("subscription_status", "active")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function getOwnerCommunities(userId: string) {
+  const db = await getDB();
+  const { data } = await db
+    .from("communities")
+    .select("*")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/** Communities the user has joined (for hub / messages) */
+export async function getJoinedCommunities(userId: string, limit = 50) {
+  const db = await getDB();
+  const { data: members } = await db
+    .from("community_members")
+    .select("community_id")
+    .eq("user_id", userId)
+    .eq("subscription_status", "active");
+  if (!members?.length) return [];
+  const ids = members.map((m: { community_id: string }) => m.community_id);
+  const { data } = await db
+    .from("communities")
+    .select(`
+      id, name, slug, description, avatar_url, category, member_count, post_count,
+      is_private, is_featured
+    `)
+    .in("id", ids)
+    .eq("is_active", true)
+    .order("member_count", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function getCommunitySlug(communityId: string): Promise<string | null> {
+  const db = await getDB();
+  const { data } = await db.from("communities").select("slug").eq("id", communityId).single();
+  return data?.slug ?? null;
+}
+
+export async function getCommunityStats(communityId: string) {
+  const db = await getDB();
+  const [community, members, posts] = await Promise.all([
+    db.from("communities").select("member_count, post_count, monthly_price, created_at").eq("id", communityId).single(),
+    db.from("community_members").select("id", { count: "exact", head: true }).eq("community_id", communityId).eq("subscription_status", "active"),
+    db.from("community_posts").select("id", { count: "exact", head: true }).eq("community_id", communityId),
+  ]);
+
+  return {
+    memberCount: members.count ?? community.data?.member_count ?? 0,
+    postCount: posts.count ?? community.data?.post_count ?? 0,
+    monthlyPrice: community.data?.monthly_price ?? 0,
+    createdAt: community.data?.created_at,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -194,13 +309,39 @@ export async function getViralClips(limit = 6) {
     .select(`
       id, title, description, thumbnail_url, video_url, duration,
       total_views, total_shares, total_downloads, total_conversions,
-      vendors ( business_name, business_slug ),
-      products ( name, slug, price, affiliate_commission_rate )
+      vendors ( id, business_name, business_slug, logo_url:business_logo ),
+      products ( name, slug, price, images, affiliate_commission_rate )
     `)
     .eq("is_active", true)
     .order("total_views", { ascending: false })
     .limit(limit);
-  return data ?? [];
+  return (data ?? []).map((clip: any) => ({
+    ...clip,
+    vendors: Array.isArray(clip.vendors) ? clip.vendors[0] : clip.vendors,
+    products: Array.isArray(clip.products) ? clip.products[0] : clip.products
+  }));
+}
+
+/** For TikTok-style feed: more clips with product id for buy/add to cart */
+export async function getFeedClips(limit = 30) {
+  const db = await getDB();
+  const { data } = await db
+    .from("viral_clips")
+    .select(`
+      id, title, description, thumbnail_url, video_url, duration,
+      total_views, total_shares, total_downloads, total_conversions,
+      vendor_id, product_id,
+      vendors ( id, business_name, business_slug, business_logo ),
+      products ( id, name, slug, price, images, rating, inventory_quantity )
+    `)
+    .eq("is_active", true)
+    .order("total_views", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((clip: any) => ({
+    ...clip,
+    vendors: Array.isArray(clip.vendors) ? clip.vendors[0] : clip.vendors,
+    products: Array.isArray(clip.products) ? clip.products[0] : clip.products
+  }));
 }
 
 export async function getVendorClips(vendorId: string) {
@@ -211,6 +352,28 @@ export async function getVendorClips(vendorId: string) {
     .eq("vendor_id", vendorId)
     .order("created_at", { ascending: false });
   return data ?? [];
+}
+
+/** Clips with product/vendor for creator profile feed */
+export async function getVendorClipsWithDetails(vendorId: string, limit = 50) {
+  const db = await getDB();
+  const { data } = await db
+    .from("viral_clips")
+    .select(`
+      id, title, description, thumbnail_url, video_url, duration,
+      total_views, total_shares, vendor_id, product_id,
+      vendors ( id, business_name, business_slug, business_logo ),
+      products ( id, name, slug, price, images )
+    `)
+    .eq("vendor_id", vendorId)
+    .eq("is_active", true)
+    .order("total_views", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((clip: any) => ({
+    ...clip,
+    vendors: Array.isArray(clip.vendors) ? clip.vendors[0] : clip.vendors,
+    products: Array.isArray(clip.products) ? clip.products[0] : clip.products
+  }));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -354,6 +517,17 @@ export async function getAffiliateDashboardStats(affiliateId: string) {
     .eq("id", affiliateId)
     .single();
   return data;
+}
+
+// Public leaderboard-style slice of affiliates for homepage / marketing
+export async function getTopAffiliates(limit = 5) {
+  const admin = getAdminDB();
+  const { data } = await admin
+    .from("affiliates")
+    .select("id, user_id, affiliate_code, total_clicks, total_conversions, total_earnings")
+    .order("total_earnings", { ascending: false })
+    .limit(limit);
+  return data ?? [];
 }
 
 export async function getPlatformStats() {

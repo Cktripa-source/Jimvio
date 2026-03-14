@@ -23,20 +23,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div>
-      <div className="mb-7">
-        <p className="label-xs mb-1">Welcome Back</p>
-        <h1 className="text-3xl font-extrabold text-base mb-1">Sign In</h1>
-        <p className="text-sm text-muted-c">Authorize your session to access the platform.</p>
+    <div className="space-y-4 text-left">
+      <div>
+        <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">Sign in</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">Use your account to access the platform.</p>
       </div>
 
-      {/* Google */}
-      <form action={signInWithGoogle as () => void} className="mb-5">
+      <form action={signInWithGoogle as () => void} className="block">
         <button
           type="submit"
-          className="w-full h-11 rounded-xl border border-base bg-surface text-sm font-medium text-base hover:bg-subtle transition-all flex items-center justify-center gap-2.5"
+          className="w-full max-w-[400px] h-7 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)] active:bg-[var(--color-border)]/30 transition-colors inline-flex items-center justify-center gap-2 shadow-[var(--shadow-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:border-[var(--color-accent)] px-4 py-1.5"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24">
+          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden>
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -46,17 +44,17 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-border-base" />
-        <span className="text-xs text-muted-c font-medium uppercase tracking-wider">or with email</span>
-        <div className="flex-1 h-px bg-border-base" />
+      <div className="flex items-center gap-2 py-1">
+        <div className="flex-1 h-px bg-[var(--color-border)]" />
+        <span className="text-[11px] text-[var(--color-text-muted)] font-medium capitalize tracking-wider shrink-0">or</span>
+        <div className="flex-1 h-px bg-[var(--color-border)]" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-4 shadow-[var(--shadow-md)]">
         <Input
           name="email"
           type="email"
-          label="Email Address"
+          label="Email"
           placeholder="you@example.com"
           icon={<Mail className="h-4 w-4" />}
           required
@@ -69,7 +67,7 @@ export default function LoginPage() {
           placeholder="Enter your password"
           icon={<Lock className="h-4 w-4" />}
           iconRight={
-            <button type="button" onClick={() => setShowPw(!showPw)} className="text-muted-c hover:text-base transition-colors" tabIndex={-1}>
+            <button type="button" onClick={() => setShowPw(!showPw)} className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)] transition-colors" tabIndex={-1} aria-label={showPw ? "Hide password" : "Show password"}>
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           }
@@ -77,27 +75,27 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
 
-        <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-sm text-primary-600 hover:underline">
+        <div className="flex justify-end pt-0.5">
+          <Link href="/forgot-password" className="text-xs font-medium text-[var(--color-accent)] hover:underline">
             Forgot password?
           </Link>
         </div>
 
         {error && (
-          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-light)] px-3 py-2 text-sm text-[var(--color-danger)]">
             {error}
           </div>
         )}
 
-        <Button type="submit" className="w-full" size="lg" loading={pending}>
+        <Button type="submit" className="w-full max-w-[400px] h-7 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-xs font-medium shadow-[var(--shadow-sm)] px-4 py-1.5" size="sm" loading={pending}>
           <LogIn className="h-4 w-4" />
-          Initialize Session
+          Sign in
         </Button>
       </form>
 
-      <p className="text-center text-sm mt-5 text-muted-c">
-        New to JIMVIO?{" "}
-        <Link href="/register" className="text-primary-600 font-semibold hover:underline">Create Free Account</Link>
+      <p className="text-sm text-[var(--color-text-secondary)] text-left">
+        New to Jimvio?{" "}
+        <Link href="/register" className="font-medium text-[var(--color-accent)] hover:underline">Create free account</Link>
       </p>
     </div>
   );

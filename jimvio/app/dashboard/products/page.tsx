@@ -88,11 +88,11 @@ export default function ProductsPage() {
 
   if (!loading && !vendor) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-base">Products</h1>
-        <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+      <div className="space-y-5">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Products</h1>
+        <div className="bg-subtle border border-base rounded-xl p-8 text-center">
           <div className="text-4xl mb-3">🏪</div>
-          <h3 className="text-lg font-bold text-base mb-2">Activate Vendor Role First</h3>
+          <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">Activate Vendor Role First</h3>
           <p className="text-sm text-muted-c mb-4">You need a vendor account to manage products.</p>
           <Button asChild><Link href="/dashboard/roles">Activate Vendor Role</Link></Button>
         </div>
@@ -101,10 +101,10 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-base">Products</h1>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Products</h1>
           <p className="text-sm text-muted-c mt-0.5">Manage your product catalog</p>
         </div>
         <Button asChild>
@@ -113,7 +113,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total Products" value={loading ? "—" : products.length}  change={3.1}  icon={<Package    className="h-4 w-4" />} iconColor="from-primary-600 to-accent-600" />
         <StatCard title="Active"         value={loading ? "—" : active}            change={1.5}  icon={<TrendingUp className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
         <StatCard title="Total Sales"    value={loading ? "—" : totalSales.toLocaleString()} change={18.2} icon={<TrendingUp className="h-4 w-4" />} iconColor="from-blue-600 to-cyan-600" />
@@ -122,24 +122,23 @@ export default function ProductsPage() {
 
       {/* Filter bar */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-3">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-c pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-c pointer-events-none" />
               <input
                 placeholder="Search products..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full h-9 pl-10 pr-3.5 rounded-xl border border-base bg-subtle text-sm text-base placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all"
+                className="w-full h-9 pl-9 pr-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)] transition-all"
               />
             </div>
-            <div className="flex items-center gap-1 bg-subtle border border-base rounded-xl overflow-hidden p-1">
+            <div className="flex items-center gap-1 bg-subtle border border-base rounded-lg overflow-hidden p-0.5">
               {["All", "Active", "Digital", "Physical", "Low Stock"].map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeFilter === f ? "text-white shadow-primary" : "text-muted-c hover:text-base"}`}
-                  style={activeFilter === f ? { background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" } : undefined}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${activeFilter === f ? "bg-[var(--color-accent)] text-white shadow-primary" : "text-muted-c hover:text-[var(--color-text-primary)]"}`}
                 >
                   {f}
                 </button>
@@ -151,7 +150,7 @@ export default function ProductsPage() {
 
       {/* Table */}
       <Card>
-        <CardHeader className="pt-5 px-5 pb-4">
+        <CardHeader className="pt-4 px-4 pb-3">
           <CardTitle>
             {loading ? "Loading..." : `All Products (${filtered.length})`}
           </CardTitle>
@@ -199,21 +198,21 @@ export default function ProductsPage() {
                               }
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-base group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors line-clamp-1">{p.name as string}</p>
+                              <p className="text-sm font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors line-clamp-1">{p.name as string}</p>
                               <p className="text-xs text-muted-c">{p.is_digital ? "Digital" : "Physical"} · {p.product_type as string}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="text-right"><span className="text-sm font-semibold text-base">{formatCurrency(Number(p.price))}</span></td>
+                        <td className="text-right"><span className="text-sm font-semibold text-[var(--color-text-primary)]">{formatCurrency(Number(p.price))}</span></td>
                         <td className="text-right">
                           {p.is_digital
                             ? <span className="text-xs text-muted-c">Unlimited</span>
-                            : <span className={`text-sm font-medium ${(p.inventory_quantity as number) <= 5 ? "text-amber-600 dark:text-amber-400" : "text-base"}`}>
+                            : <span className={`text-sm font-medium ${(p.inventory_quantity as number) <= 5 ? "text-amber-600 dark:text-amber-400" : "text-[var(--color-text-primary)]"}`}>
                                 {(p.inventory_quantity as number) ?? 0}
                               </span>
                           }
                         </td>
-                        <td className="text-right"><span className="text-sm text-base">{((p.sale_count as number) ?? 0).toLocaleString()}</span></td>
+                        <td className="text-right"><span className="text-sm text-[var(--color-text-primary)]">{((p.sale_count as number) ?? 0).toLocaleString()}</span></td>
                         <td className="text-center"><Badge variant={s.variant}>{s.label}</Badge></td>
                         <td className="text-center">
                           <button

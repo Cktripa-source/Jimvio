@@ -3,18 +3,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-all",
+  "inline-flex items-center gap-1 rounded-[var(--radius-full)] px-3.5 py-1.5 text-[12px] font-medium capitalize tracking-[0.04em] transition-colors",
   {
     variants: {
       variant: {
-        default: "bg-brand-500/20 text-brand-300 border border-brand-500/30",
-        secondary: "bg-white/10 text-white/70 border border-white/10",
-        success: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
-        warning: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-        destructive: "bg-red-500/20 text-red-300 border border-red-500/30",
-        accent: "bg-accent-500/20 text-accent-300 border border-accent-500/30",
-        outline: "border border-white/20 text-white/70",
-        glass: "bg-white/10 backdrop-blur-sm border border-white/10 text-white",
+        default:
+          "bg-[var(--color-surface-secondary)] border border-[var(--color-border)] text-[var(--color-text-secondary)]",
+        accent:
+          "bg-[var(--color-accent-light)] border border-[var(--color-accent)] text-[var(--color-accent)]",
+        success:
+          "bg-[var(--color-success-light)] border border-[var(--color-success)] text-[var(--color-success)]",
+        warning:
+          "bg-[var(--color-warning-light)] border border-[var(--color-warning)] text-[var(--color-warning)]",
+        destructive:
+          "bg-[var(--color-danger-light)] border border-[var(--color-danger)] text-[var(--color-danger)]",
+        secondary:
+          "bg-[var(--color-surface-secondary)] border border-[var(--color-border)] text-[var(--color-text-primary)]",
+        outline:
+          "border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] bg-transparent",
       },
     },
     defaultVariants: { variant: "default" },

@@ -26,18 +26,24 @@ export async function updateSession(request: NextRequest) {
       }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const protectedPaths = ["/dashboard", "/admin"];
+    const protectedPaths = ["/dashboard", "/admin", "/settings"];
     const isProtected = protectedPaths.some((p) =>
       request.nextUrl.pathname.startsWith(p)
     );
 
-    if (!user && isProtected) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("redirect", request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+    // Only call getUser if we are on a protected path or if we have a session cookie
+    // This avoids unnecessary network calls for truly anonymous users on public pages.
+    const hasSession = request.cookies.getAll().some(c => c.name.startsWith("sb-"));
+    
+    if (isProtected || hasSession) {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user && isProtected) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        url.searchParams.set("redirect", request.nextUrl.pathname);
+        return NextResponse.redirect(url);
+      }
     }
   } catch (err) {
     // Don't block the request if middleware fails

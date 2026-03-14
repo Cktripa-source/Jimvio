@@ -57,24 +57,24 @@ export default function CampaignsPage() {
   const totalRevenue  = campaigns.reduce((s, c) => s + Number(c.total_revenue ?? 0), 0);
   const activeCampaigns = campaigns.filter(c => c.status === "active").length;
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent)]" /></div>;
 
   if (!vendor) return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-base">Campaigns</h1>
-      <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+      <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Campaigns</h1>
+      <div className="bg-subtle border border-base rounded-xl p-8 text-center">
         <div className="text-4xl mb-3">🎯</div>
-        <h3 className="text-lg font-bold text-base mb-2">Activate Vendor Role First</h3>
+        <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">Activate Vendor Role First</h3>
         <Button asChild><Link href="/dashboard/roles">Activate Vendor Role</Link></Button>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-base">Influencer Campaigns</h1>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Influencer Campaigns</h1>
           <p className="text-sm text-muted-c mt-0.5">Manage your viral marketing campaigns</p>
         </div>
         <Button onClick={async () => {
@@ -96,7 +96,7 @@ export default function CampaignsPage() {
       </div>
 
       {campaigns.length === 0 ? (
-        <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+        <div className="bg-subtle border border-base rounded-xl p-8 text-center">
           <div className="text-5xl mb-3">🎯</div>
           <h3 className="text-lg font-bold text-base mb-2">No campaigns yet</h3>
           <p className="text-sm text-muted-c mb-4">Create your first influencer campaign to start driving viral traffic to your products.</p>

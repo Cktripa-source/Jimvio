@@ -57,21 +57,21 @@ export default function InventoryPage() {
   const lowStock   = products.filter(p => (p.inventory_quantity as number) > 0 && (p.inventory_quantity as number) <= ((p.low_stock_threshold as number) ?? 5)).length;
   const totalUnits = products.reduce((s, p) => s + (p.inventory_quantity as number ?? 0), 0);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent)]" /></div>;
 
   if (!vendor) return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-base">Inventory</h1>
-      <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+      <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Inventory</h1>
+      <div className="bg-subtle border border-base rounded-xl p-8 text-center">
         <Button asChild><Link href="/dashboard/roles">Activate Vendor Role</Link></Button>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-base">Inventory</h1>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Inventory</h1>
         <p className="text-sm text-muted-c mt-0.5">Track and manage your physical product stock</p>
       </div>
 
@@ -82,9 +82,9 @@ export default function InventoryPage() {
       </div>
 
       {products.length === 0 ? (
-        <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+        <div className="bg-subtle border border-base rounded-xl p-8 text-center">
           <div className="text-4xl mb-3">📦</div>
-          <h3 className="text-lg font-bold text-base mb-2">No physical products</h3>
+          <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">No physical products</h3>
           <p className="text-sm text-muted-c mb-4">Physical products you add will show their inventory here.</p>
           <Button asChild><Link href="/dashboard/products/new">Add Physical Product</Link></Button>
         </div>

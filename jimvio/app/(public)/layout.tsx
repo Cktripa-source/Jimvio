@@ -1,13 +1,13 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getCachedUser } from "@/lib/supabase/server";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   let profile = null;
 
   try {
+    const { data: { user } } = await getCachedUser();
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
       const { data } = await supabase
@@ -33,7 +33,7 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar user={profile} />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-[var(--navbar-height)]">{children}</main>
       <Footer />
     </div>
   );

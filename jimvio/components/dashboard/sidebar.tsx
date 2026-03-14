@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingCart, Heart, Download,
@@ -47,17 +48,18 @@ const roleMenus: Record<DashboardRole, Array<{ label: string; href: string; icon
     { label: "Leaderboard", href: "/dashboard/leaderboard", icon: <BarChart3 className="h-4 w-4" /> },
   ],
   influencer: [
-    { label: "Overview", href: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { label: "Campaigns", href: "/dashboard/campaigns", icon: <Zap className="h-4 w-4" /> },
-    { label: "Clips", href: "/dashboard/clips", icon: <Video className="h-4 w-4" /> },
+    { label: "Overview", href: "/dashboard/influencer", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { label: "Marketplace", href: "/dashboard/campaigns/browse", icon: <Globe className="h-4 w-4" /> },
+    { label: "My Campaigns", href: "/dashboard/campaigns", icon: <Zap className="h-4 w-4" /> },
+    { label: "My Clips", href: "/dashboard/clips", icon: <Video className="h-4 w-4" /> },
     { label: "Analytics", href: "/dashboard/analytics", icon: <BarChart3 className="h-4 w-4" /> },
-    { label: "Revenue", href: "/dashboard/revenue", icon: <DollarSign className="h-4 w-4" /> },
+    { label: "Revenue", href: "/dashboard/earnings", icon: <DollarSign className="h-4 w-4" /> },
   ],
   community: [
-    { label: "Overview", href: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { label: "Members", href: "/dashboard/members", icon: <Users className="h-4 w-4" /> },
-    { label: "Posts", href: "/dashboard/posts", icon: <MessageSquare className="h-4 w-4" /> },
-    { label: "Subscriptions", href: "/dashboard/subscriptions", icon: <Star className="h-4 w-4" /> },
+    { label: "Overview", href: "/dashboard/community", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { label: "Members", href: "/dashboard/community/members", icon: <Users className="h-4 w-4" /> },
+    { label: "Posts", href: "/dashboard/community/posts", icon: <MessageSquare className="h-4 w-4" /> },
+    { label: "Create", href: "/dashboard/community/create", icon: <Zap className="h-4 w-4" /> },
     { label: "Analytics", href: "/dashboard/analytics", icon: <BarChart3 className="h-4 w-4" /> },
     { label: "Revenue", href: "/dashboard/revenue", icon: <DollarSign className="h-4 w-4" /> },
   ],
@@ -76,7 +78,7 @@ const roleMenus: Record<DashboardRole, Array<{ label: string; href: string; icon
 
 const roleColors: Record<DashboardRole, string> = {
   buyer: "from-blue-600 to-cyan-600",
-  vendor: "from-brand-600 to-accent-600",
+  vendor: "from-primary-600 to-accent-600",
   affiliate: "from-emerald-600 to-teal-600",
   influencer: "from-pink-600 to-rose-600",
   community: "from-amber-600 to-orange-600",
@@ -107,23 +109,26 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen sticky top-0 border-r border-white/10 bg-slate-950/80 backdrop-blur-xl transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "flex flex-col h-screen sticky top-0 border-r transition-all duration-300",
+        "bg-[var(--dashboard-sidebar-bg)] border-[var(--dashboard-sidebar-border)]",
+        collapsed ? "w-[4.25rem]" : "w-64"
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 p-4 border-b border-white/10 h-16">
-        <div className={cn("w-8 h-8 rounded-xl bg-gradient-to-br flex-shrink-0 flex items-center justify-center shadow-brand", roleColors[role])}>
-          <span className="text-white font-black text-sm">J</span>
-        </div>
-        {!collapsed && (
-          <span className="text-xl font-black text-white">
-            JIM<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">VIO</span>
-          </span>
-        )}
+      <div className="flex items-center gap-2.5 px-3 py-3 border-b border-[var(--dashboard-sidebar-border)] min-h-[3.5rem]">
+        <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <Image
+            src="/jimvio-logo.png"
+            alt="Jimvio"
+            width={120}
+            height={40}
+            className={cn("h-8 w-auto", collapsed && "mx-auto")}
+          />
+        </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto p-1 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all"
+          className="ml-auto p-1.5 rounded-md transition-colors hover:bg-[var(--color-surface-secondary)]"
+          style={{ color: "var(--dashboard-sidebar-muted)" }}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
@@ -131,19 +136,20 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
 
       {/* Role Switcher */}
       {!collapsed && activeRoles.length > 1 && (
-        <div className="p-3 border-b border-white/10">
-          <p className="text-xs text-white/30 font-medium uppercase tracking-wider mb-2 px-1">Switch Role</p>
+        <div className="p-2.5 border-b border-[var(--dashboard-sidebar-border)]">
+          <p className="text-[10px] font-medium capitalize tracking-wider mb-1.5 px-2" style={{ color: "var(--dashboard-sidebar-muted)" }}>Role</p>
           <div className="flex flex-wrap gap-1">
             {activeRoles.map((r) => (
               <button
                 key={r}
                 onClick={() => onRoleChange?.(r)}
                 className={cn(
-                  "px-2 py-1 rounded-lg text-xs font-semibold transition-all",
+                  "px-2 py-1 rounded-md text-xs font-medium transition-all",
                   r === role
-                    ? `bg-gradient-to-r ${roleColors[r]} text-white shadow-brand`
-                    : "text-white/50 hover:text-white hover:bg-white/10"
+                    ? "bg-[var(--dashboard-sidebar-active-bg)] text-[var(--dashboard-sidebar-active-text)] shadow-primary"
+                    : "hover:bg-[var(--color-surface-secondary)]"
                 )}
+                style={r !== role ? { color: "var(--dashboard-sidebar-text)" } : undefined}
               >
                 {roleLabels[r]}
               </button>
@@ -153,7 +159,7 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
         {menu.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
@@ -161,21 +167,20 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
+                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150",
                 isActive
-                  ? `bg-gradient-to-r ${roleColors[role]} text-white shadow-brand`
-                  : "text-white/50 hover:text-white hover:bg-white/10"
+                  ? "bg-[var(--dashboard-sidebar-active-bg)] text-[var(--dashboard-sidebar-active-text)] shadow-primary"
+                  : "hover:bg-[var(--color-surface-secondary)]"
               )}
+              style={!isActive ? { color: "var(--dashboard-sidebar-text)" } : undefined}
               title={collapsed ? item.label : undefined}
             >
-              <span className={cn("flex-shrink-0", isActive ? "text-white" : "text-white/50 group-hover:text-white")}>
-                {item.icon}
-              </span>
+              <span className="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-4">{item.icon}</span>
               {!collapsed && (
                 <>
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.badge && (
-                    <Badge variant="default" className="text-xs py-0 px-1.5">
+                    <Badge variant="default" className="text-[10px] py-0 px-1">
                       {item.badge}
                     </Badge>
                   )}
@@ -187,10 +192,11 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
       </nav>
 
       {/* Bottom section */}
-      <div className="p-3 border-t border-white/10 space-y-1">
+      <div className="p-2 border-t border-[var(--dashboard-sidebar-border)] space-y-0.5">
         <Link
           href="/dashboard/settings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all"
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-surface-secondary)] transition-colors"
+          style={{ color: "var(--dashboard-sidebar-text)" }}
           title={collapsed ? "Settings" : undefined}
         >
           <Settings className="h-4 w-4 flex-shrink-0" />
@@ -198,7 +204,8 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
         </Link>
         <Link
           href="/dashboard/notifications"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all"
+          className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-surface-secondary)] transition-colors"
+          style={{ color: "var(--dashboard-sidebar-text)" }}
           title={collapsed ? "Notifications" : undefined}
         >
           <Bell className="h-4 w-4 flex-shrink-0" />
@@ -206,30 +213,30 @@ export function Sidebar({ role, user, activeRoles, onRoleChange }: SidebarProps)
         </Link>
 
         {/* User */}
-        <div className="mt-2 pt-2 border-t border-white/10">
+        <div className="mt-2 pt-2 border-t border-[var(--dashboard-sidebar-border)]">
           {collapsed ? (
             <Avatar className="h-8 w-8 mx-auto">
               <AvatarImage src={user.avatar_url || ""} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-xs bg-[var(--color-accent-light)] text-[var(--color-accent)]">
                 {user.full_name?.[0] || user.email[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
           ) : (
-            <div className="flex items-center gap-2.5 px-2 py-2">
+            <div className="flex items-center gap-2 px-2 py-1.5">
               <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage src={user.avatar_url || ""} />
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="text-xs bg-[var(--color-accent-light)] text-[var(--color-accent)]">
                   {user.full_name?.[0] || user.email[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
+                <p className="text-sm font-medium truncate" style={{ color: "var(--dashboard-sidebar-text)" }}>
                   {user.full_name || user.email.split("@")[0]}
                 </p>
-                <p className="text-xs text-white/40 truncate">{user.email}</p>
+                <p className="text-xs truncate" style={{ color: "var(--dashboard-sidebar-muted)" }}>{user.email}</p>
               </div>
               <form action={signOut}>
-                <button type="submit" className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-all" title="Sign Out">
+                <button type="submit" className="p-1.5 rounded-md hover:bg-red-500/10 text-[var(--dashboard-sidebar-muted)] hover:text-red-500 transition-colors" title="Sign Out">
                   <LogOut className="h-3.5 w-3.5" />
                 </button>
               </form>

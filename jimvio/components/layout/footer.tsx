@@ -1,124 +1,138 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import { Twitter, Instagram, Youtube, Linkedin, Mail, MapPin, Phone } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
+import { 
+  Twitter, Youtube, Linkedin, Mail, Facebook, 
+  ShieldCheck, CreditCard, Lock, ArrowUp
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const footerLinks = {
-  Platform: [
-    { label: "Marketplace", href: "/marketplace" },
-    { label: "Affiliates", href: "/affiliates" },
-    { label: "Influencers", href: "/influencers" },
-    { label: "Communities", href: "/communities" },
-    { label: "Pricing", href: "/pricing" },
+  "Marketplace": [
+    { label: "Browse Products", href: "/marketplace" },
+    { label: "Top Suppliers", href: "/vendors" },
+    { label: "Post Buying Lead", href: "/requests/new" },
+    { label: "Trade Assurance", href: "/protection" },
+    { label: "Verified Exporters", href: "/verified" },
+    { label: "Flash Deals", href: "/deals" },
   ],
-  Sellers: [
-    { label: "Start Selling", href: "/register?role=vendor" },
-    { label: "Vendor Dashboard", href: "/dashboard" },
+  "Earn & Grow": [
     { label: "Affiliate Program", href: "/affiliates" },
-    { label: "Influencer Campaigns", href: "/influencers" },
-    { label: "Analytics", href: "/dashboard/analytics" },
+    { label: "Influencer Hub", href: "/influencers" },
+    { label: "Communities", href: "/communities" },
+    { label: "Clippings", href: "/clippings" },
+    { label: "Partner API", href: "/api" },
+    { label: "Creator Studio", href: "/creator" },
   ],
-  Company: [
-    { label: "About Us", href: "/about" },
+  "Resources": [
+    { label: "Market Reports", href: "/reports" },
+    { label: "Trade Guides", href: "/guides" },
     { label: "Blog", href: "/blog" },
+    { label: "Help Center", href: "/help" },
+    { label: "Webinars", href: "/webinars" },
+    { label: "API Docs", href: "/docs" },
+  ],
+  "Company": [
+    { label: "About Us", href: "/about" },
     { label: "Careers", href: "/careers" },
     { label: "Press", href: "/press" },
+    { label: "Trust & Safety", href: "/safety" },
     { label: "Contact", href: "/contact" },
-  ],
-  Support: [
-    { label: "Help Center", href: "/help" },
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
-    { label: "Status", href: "https://status.jimvio.com" },
+    { label: "Investor Relations", href: "/investors" },
   ],
 };
 
-const socials = [
-  { icon: <Twitter className="h-4 w-4" />, href: "https://twitter.com/jimvio", label: "Twitter" },
-  { icon: <Instagram className="h-4 w-4" />, href: "https://instagram.com/jimvio", label: "Instagram" },
-  { icon: <Youtube className="h-4 w-4" />, href: "https://youtube.com/jimvio", label: "YouTube" },
-  { icon: <Linkedin className="h-4 w-4" />, href: "https://linkedin.com/company/jimvio", label: "LinkedIn" },
-];
-
 export function Footer() {
   return (
-    <footer className="relative border-t border-white/10 bg-slate-950/50 backdrop-blur-sm pt-16 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top section */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
-          {/* Brand */}
-          <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center shadow-brand">
-                <span className="text-white font-black">J</span>
-              </div>
-              <span className="text-2xl font-black text-white">
-                JIM<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent-400">VIO</span>
-              </span>
-            </Link>
-            <p className="text-sm text-white/50 mb-5 leading-relaxed max-w-xs">
-              The global creator-commerce ecosystem. Buy, sell, affiliate, influence, and build communities in one platform.
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-white/40">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-brand-400" />
-                <span>Kigali, Rwanda</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5 text-brand-400" />
-                <span>hello@jimvio.com</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5 text-brand-400" />
-                <span>+250 700 000 000</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-sm font-semibold text-white mb-4">{category}</h4>
-              <ul className="flex flex-col gap-2.5">
-                {links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-white/40 hover:text-white transition-colors duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <Separator className="mb-8" />
-
-        {/* Bottom */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white/30">
-            © {new Date().getFullYear()} JIMVIO. All rights reserved. Built in Rwanda 🇷🇼
+    <footer className="bg-white text-[#1a1a1a] pt-20 border-t border-[#f0f0f0]">
+      <div className="max-w-[1280px] mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-12 pb-16">
+        <div className="lg:col-span-2">
+          <Link href="/" className="mb-6 block transition-transform hover:scale-105 active:scale-95 origin-left">
+            <Image 
+              src="/jimvio-logo.png" 
+              alt="Jimvio" 
+              width={140} 
+              height={40} 
+              className="h-9 w-auto object-contain"
+            />
+          </Link>
+          <p className="text-[14px] text-[#6b7280] leading-[1.7] max-w-[280px] mb-8 font-medium">
+            The global creator-commerce ecosystem. One platform for verified suppliers, buyers, affiliates & influencers.
           </p>
-          <div className="flex items-center gap-2">
-            {socials.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-                className="p-2 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all"
+          <div className="flex gap-3 mb-8">
+            {[
+              { icon: <Twitter className="h-4 w-4" />, label: "X" },
+              { icon: <Linkedin className="h-4 w-4" />, label: "LinkedIn" },
+              { icon: <Youtube className="h-4 w-4" />, label: "YouTube" },
+              { icon: <Mail className="h-4 w-4" />, label: "Email" },
+              { icon: <Facebook className="h-4 w-4" />, label: "Facebook" },
+            ].map((s) => (
+              <a 
+                key={s.label}
+                href="#" 
+                className="w-10 h-10 bg-[#fafafa] border border-[#f0f0f0] rounded-lg flex items-center justify-center text-[#9ca3af] hover:bg-[#f97316] hover:border-[#f97316] hover:text-white transition-all shadow-sm"
               >
-                {social.icon}
+                {s.icon}
               </a>
             ))}
           </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { icon: <Lock className="h-3 w-3" />, label: "SSL" },
+              { icon: <CreditCard className="h-3 w-3" />, label: "PCI" },
+              { icon: <ShieldCheck className="h-3 w-3" />, label: "ISO" },
+            ].map(l => (
+              <span key={l.label} className="px-3 py-1 bg-[#fafafa] border border-[#f0f0f0] rounded-md text-[10px] text-[#9ca3af] flex items-center gap-1.5 font-bold capitalize tracking-wider">
+                {l.icon} {l.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {Object.entries(footerLinks).map(([title, links]) => (
+          <div key={title} className="lg:col-span-1">
+            <h5 className="text-[11px] font-black text-[#9ca3af] capitalize tracking-[0.2em] mb-8">
+              {title}
+            </h5>
+            <ul className="flex flex-col gap-4">
+              {links.map((link) => (
+                <li key={link.label}>
+                  <Link 
+                    href={link.href} 
+                    className="text-[14px] text-[#4b5563] hover:text-[#f97316] transition-colors font-semibold"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t border-[#f0f0f0] bg-[#fafafa] py-10 w-full">
+        <div className="max-w-[1280px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-[12px] text-[#9ca3af] font-bold capitalize tracking-[0.15em]">
+            © {new Date().getFullYear()} Jimvio, Inc. · Built for Global Commerce · Kigali 🇷🇼
+          </p>
+          <div className="flex gap-8">
+            <Link href="/privacy" className="text-[12px] text-[#9ca3af] hover:text-[#f97316] transition-colors font-bold capitalize tracking-widest">Privacy Policy</Link>
+            <Link href="/terms" className="text-[12px] text-[#9ca3af] hover:text-[#f97316] transition-colors font-bold capitalize tracking-widest">Terms</Link>
+            <Link href="#" className="text-[12px] text-[#9ca3af] hover:text-[#f97316] transition-colors font-bold capitalize tracking-widest">Cookies</Link>
+            <Link href="#" className="text-[12px] text-[#9ca3af] hover:text-[#f97316] transition-colors font-bold capitalize tracking-widest">Sitemap</Link>
+          </div>
         </div>
       </div>
+
+      {/* Utilities */}
+      <button 
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-8 right-8 w-12 h-12 bg-[#f97316] text-white rounded-full flex items-center justify-center shadow-2xl shadow-[#f97316]/40 hover:shadow-[#f97316]/60 hover:-translate-y-1.5 transition-all z-[200] active:scale-95"
+      >
+        <ArrowUp className="h-6 w-6 stroke-[3px]" />
+      </button>
     </footer>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Sidebar, type DashboardRole } from "@/components/dashboard/sidebar";
 import { createClient } from "@/lib/supabase/client";
@@ -11,7 +11,7 @@ interface UserProfile {
   avatar_url: string | null;
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+function DashboardShellContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const welcomeRole  = searchParams.get("welcome") as DashboardRole | null;
 
@@ -26,7 +26,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
-      // Get profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("email, full_name, avatar_url")
@@ -37,7 +36,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         setUser({ email: profile.email, full_name: profile.full_name, avatar_url: profile.avatar_url });
       }
 
-      // Detect active roles based on what exists in DB
       const roles: DashboardRole[] = ["buyer"];
 
       const [vendorRes, affiliateRes, influencerRes, communityRes] = await Promise.all([
@@ -54,7 +52,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       setActiveRoles(roles);
 
-      // Set active role: prefer welcome param, then highest privilege
       if (welcomeRole && roles.includes(welcomeRole)) {
         setActiveRole(welcomeRole);
       } else if (roles.includes("vendor")) {
@@ -83,9 +80,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         activeRoles={activeRoles}
         onRoleChange={setActiveRole}
       />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6 lg:p-8">{children}</div>
+      <main className="flex-1 overflow-y-auto bg-[var(--color-bg)]">
+        <div className="p-4 sm:p-5 lg:p-6 max-w-[1400px]">{children}</div>
       </main>
     </div>
+  );
+}
+
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <DashboardShellContent>{children}</DashboardShellContent>
+    </Suspense>
   );
 }

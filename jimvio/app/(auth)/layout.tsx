@@ -12,95 +12,83 @@ const benefits = [
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left: Form ──────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col bg-page">
-        <div className="p-5 border-b border-base">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-c hover:text-base transition-colors">
+    <div className="min-h-screen flex bg-[var(--color-bg)]">
+      {/* Left: Form */}
+      <div className="flex-1 flex flex-col bg-[var(--color-surface)]">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
+          <Link href="/" className="inline-flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Jimvio
+          </Link>
+          <Link href="/" className="inline-flex items-center">
+            <Image
+              src="/jimvio-logo.png"
+              alt="Jimvio"
+              width={112}
+              height={36}
+              className="h-10 w-auto"
+            />
           </Link>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="w-full max-w-sm animate-fade-in">
-            {/* Logo */}
-            <div className="mb-8">
-              <Image
-                src="/images/jimvio-logo.svg"
-                alt="Jimvio"
-                width={130}
-                height={37}
-                priority
-              />
-            </div>
+        <div className="flex-1 flex items-center justify-center px-4 py-6 sm:py-8">
+          <div className="w-full max-w-[400px] animate-fade-in text-left">
             {children}
           </div>
         </div>
 
-        <div className="p-5 border-t border-base text-center">
-          <p className="text-xs text-muted-c">© {new Date().getFullYear()} Jimvio · Built with ❤️ in Rwanda 🇷🇼</p>
+        <div className="px-4 py-3 border-t border-[var(--color-border)] text-center">
+          <p className="text-xs text-[var(--color-text-muted)]">© {new Date().getFullYear()} Jimvio</p>
         </div>
       </div>
 
-      {/* ── Right: Brand panel ──────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden" style={{ background: "linear-gradient(145deg, #4B2D8F 0%, #7C3AED 60%, #9333ea 100%)" }}>
-        {/* Dot pattern */}
+      {/* Right: Brand panel — always dark so text is readable in any theme */}
+      <div className="hidden lg:flex lg:w-[42%] relative overflow-hidden border-l border-[var(--color-border)] bg-[#0f0a06]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#c2410c] via-[#9a3412] to-[#7c2d12]" />
         <div
-          className="absolute inset-0 opacity-[0.07]"
+          className="absolute inset-0 opacity-[0.08]"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/svg%3E")`,
           }}
         />
-
-        {/* Orange accent blob */}
-        <div className="absolute bottom-0 right-0 w-72 h-72 rounded-full opacity-10" style={{ background: "#F5A623", filter: "blur(80px)", transform: "translate(30%, 30%)" }} />
-        <div className="absolute top-20 left-10 w-32 h-32 rounded-full opacity-10" style={{ background: "#F5A623", filter: "blur(40px)" }} />
-
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+        <div className="relative z-10 flex flex-col justify-between p-6 w-full">
           <div>
-            {/* White logo on panel */}
-            <div className="mb-12">
-              <Image src="/images/jimvio-logo-white.svg" alt="Jimvio" width={140} height={40} />
-            </div>
+            <p className="text-white/90 text-[11px] font-semibold capitalize tracking-widest mb-3">
+              B2B marketplace
+            </p>
+            <h2 className="text-2xl font-bold leading-tight mb-2 text-white">
+              One account.
+              <br />
+              <span className="text-white">Buy, sell, grow.</span>
+            </h2>
+            <p className="text-white/80 text-sm leading-relaxed max-w-xs mb-6">
+              Join buyers and suppliers. List products, run affiliates, or build communities.
+            </p>
 
-            <div className="mb-10">
-              <p className="text-purple-200 text-xs font-semibold uppercase tracking-widest mb-3">
-                Global Creator-Commerce Platform
-              </p>
-              <h2 className="text-5xl font-extrabold text-white leading-tight mb-4">
-                ACCESS THE<br />
-                <span className="text-accent-300" style={{ color: "#F5A623" }}>GLOBAL</span> HUB.
-              </h2>
-              <p className="text-purple-200 text-base leading-relaxed max-w-sm">
-                One account unlocks every role — buy, sell, affiliate, influence, and build paid communities.
-              </p>
-            </div>
-
-            <div className="space-y-4">
+            <div className="space-y-3">
               {benefits.map((b, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0 text-white">
                     {b.icon}
                   </div>
-                  <div>
-                    <p className="text-white font-semibold text-sm">{b.title}</p>
-                    <p className="text-purple-200 text-xs">{b.desc}</p>
+                  <div className="min-w-0">
+                    <p className="text-white font-medium text-sm">{b.title}</p>
+                    <p className="text-white/75 text-xs mt-0.5">{b.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {[
-              { value: "35,000+",   label: "Active Users"    },
-              { value: "RWF 2.4B+", label: "Total Paid Out"  },
-              { value: "99.9%",     label: "Uptime"          },
-              { value: "50+",       label: "Countries"       },
+              { value: "35,000+", label: "Active users" },
+              { value: "99.9%", label: "Uptime" },
+              { value: "50+", label: "Countries" },
+              { value: "B2B", label: "Marketplace" },
             ].map((s, i) => (
-              <div key={i} className="bg-white/10 rounded-xl p-3">
-                <p className="text-xl font-extrabold text-white">{s.value}</p>
-                <p className="text-xs text-purple-200">{s.label}</p>
+              <div key={i} className="bg-white/10 rounded-lg p-2.5 backdrop-blur-sm">
+                <p className="text-base font-bold text-white">{s.value}</p>
+                <p className="text-[11px] text-white/80">{s.label}</p>
               </div>
             ))}
           </div>

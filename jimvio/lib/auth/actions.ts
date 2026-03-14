@@ -105,7 +105,7 @@ export async function signIn(formData: FormData) {
   redirect("/dashboard");
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(): Promise<void> {
   let redirectUrl: string | undefined;
   try {
     const supabase = await createClient();
@@ -115,11 +115,15 @@ export async function signInWithGoogle() {
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
       },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      redirect(`/login?error=${encodeURIComponent(error.message)}`);
+      return;
+    }
     redirectUrl = data.url;
   } catch (err) {
     console.error("signInWithGoogle error:", err);
-    return { error: "Google sign-in failed. Please try again." };
+    redirect("/login?error=Google+sign-in+failed");
+    return;
   }
   if (redirectUrl) redirect(redirectUrl);
 }

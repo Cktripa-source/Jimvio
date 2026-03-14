@@ -40,7 +40,7 @@ const allRoles = [
     id: "vendor" as const,
     label: "Vendor",
     icon: <Package className="h-6 w-6" />,
-    color: "bg-primary-50 dark:bg-primary-900/30 text-primary-700",
+    color: "bg-[var(--color-accent-light)] text-[var(--color-accent)]",
     badge: "Free to activate",
     badgeVariant: "default" as const,
     description: "Open your own storefront. Sell physical or digital products globally. Manage inventory and get paid fast.",
@@ -166,7 +166,7 @@ export default function RolesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent)]" />
       </div>
     );
   }
@@ -174,9 +174,9 @@ export default function RolesPage() {
   const activeCount = Object.values(roles).filter(v => v === "active").length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-base">Activate Roles</h1>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Activate Roles</h1>
         <p className="text-sm text-muted-c mt-1">
           {activeCount} of {allRoles.length} roles active — Activate any combination to unlock additional income streams.
         </p>
@@ -195,35 +195,35 @@ export default function RolesPage() {
       )}
 
       {/* Info banner */}
-      <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl px-5 py-4 flex items-start gap-3">
-        <Crown className="h-5 w-5 text-primary-700 dark:text-primary-300 shrink-0 mt-0.5" />
+      <div className="bg-[var(--color-accent-light)] border border-[var(--color-accent)]/30 rounded-xl px-4 py-3 flex items-start gap-3">
+        <Crown className="h-5 w-5 text-[var(--color-accent)] shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-primary-800 dark:text-primary-200">One account, all roles</p>
-          <p className="text-xs text-primary-700/80 dark:text-primary-300/80 mt-0.5">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">One account, all roles</p>
+          <p className="text-xs text-muted-c mt-0.5">
             Activate roles below, then switch between them using the role switcher in the sidebar. Each role unlocks a dedicated dashboard.
           </p>
         </div>
       </div>
 
       {/* Role cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {allRoles.map((r) => {
           const status = roles[r.id];
           const isActive  = status === "active";
           const isLoading = status === "loading";
 
           return (
-            <Card key={r.id} className={isActive ? "ring-2 ring-primary-500/30" : ""}>
-              <CardContent className="p-5">
+            <Card key={r.id} className={isActive ? "ring-2 ring-[var(--color-accent)]/30" : ""}>
+              <CardContent className="p-4">
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${r.color}`}>
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${r.color}`}>
                       {r.icon}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="font-bold text-base text-base">{r.label}</h3>
+                        <h3 className="font-bold text-[var(--color-text-primary)]">{r.label}</h3>
                         {isActive && (
                           <Badge variant="success" className="text-xs">
                             <CheckCircle className="h-2.5 w-2.5" /> Active
@@ -235,23 +235,23 @@ export default function RolesPage() {
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-c mb-4 leading-relaxed">{r.description}</p>
+                <p className="text-sm text-muted-c mb-3 leading-relaxed">{r.description}</p>
 
                 {/* Features */}
-                <ul className="space-y-1.5 mb-5">
+                <ul className="space-y-1 mb-4">
                   {r.features.map((f, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-muted-c">
-                      <CheckCircle className="h-3.5 w-3.5 text-primary-600 shrink-0" /> {f}
+                      <CheckCircle className="h-3.5 w-3.5 text-[var(--color-accent)] shrink-0" /> {f}
                     </li>
                   ))}
                 </ul>
 
                 {/* Action */}
                 {isActive ? (
-                  <div className="flex items-center gap-2 text-sm text-primary-700 dark:text-primary-300 font-medium">
+                  <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-accent)]">
                     <CheckCircle className="h-4 w-4" /> This role is active
                     {r.id !== "buyer" && (
-                      <Link href="/dashboard" className="ml-auto text-xs text-muted-c hover:text-base underline">
+                      <Link href="/dashboard" className="ml-auto text-xs text-muted-c hover:text-[var(--color-text-primary)] underline">
                         Go to dashboard →
                       </Link>
                     )}

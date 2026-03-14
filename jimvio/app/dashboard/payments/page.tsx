@@ -81,43 +81,40 @@ export default function PaymentsPage() {
   const paid      = Number(wallet?.total_paid ?? 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-base">Payments & Payouts</h1>
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Payments & Payouts</h1>
         <p className="text-sm text-muted-c mt-0.5">Manage your earnings and withdrawals</p>
       </div>
 
       {/* Wallet Overview */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #4B2D8F 0%, #7C3AED 100%)" }}>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 80% 50%, #F5A623 0%, transparent 60%)" }} />
-        <div className="relative z-10">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <p className="text-purple-200 text-sm font-medium mb-1">Available Balance</p>
-              <p className="text-white text-4xl font-extrabold">{loading ? "—" : formatCurrency(available)}</p>
-            </div>
-            <div className="p-3 rounded-2xl bg-white/15">
-              <Wallet className="h-6 w-6 text-white" />
-            </div>
+      <div className="rounded-xl p-5 bg-[var(--color-accent)] text-white shadow-[var(--shadow-md)]">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-white/80 text-sm font-medium mb-1">Available Balance</p>
+            <p className="text-3xl font-bold">{loading ? "—" : formatCurrency(available)}</p>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: "Pending",     value: formatCurrency(pending) },
-              { label: "Total Earned",value: formatCurrency(earned) },
-              { label: "Total Paid",  value: formatCurrency(paid) },
-            ].map((s, i) => (
-              <div key={i} className="bg-white/10 rounded-xl p-3">
-                <p className="text-purple-200 text-xs mb-0.5">{s.label}</p>
-                <p className="text-white font-bold text-sm">{loading ? "—" : s.value}</p>
-              </div>
-            ))}
+          <div className="p-2.5 rounded-lg bg-white/15">
+            <Wallet className="h-5 w-5 text-white" />
           </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Pending",     value: formatCurrency(pending) },
+            { label: "Total Earned",value: formatCurrency(earned) },
+            { label: "Total Paid",  value: formatCurrency(paid) },
+          ].map((s, i) => (
+            <div key={i} className="bg-white/10 rounded-lg p-2.5">
+              <p className="text-white/80 text-xs mb-0.5">{s.label}</p>
+              <p className="text-white font-semibold text-sm">{loading ? "—" : s.value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Withdraw */}
       <Card>
-        <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Withdraw Funds</CardTitle></CardHeader>
+        <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Withdraw Funds</CardTitle></CardHeader>
         <CardContent className="px-5 pb-5 pt-0 space-y-4">
           {withdrawSuccess && (
             <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
@@ -156,14 +153,14 @@ export default function PaymentsPage() {
 
       {/* Payout History */}
       <Card>
-        <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Payout History</CardTitle></CardHeader>
+        <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Payout History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="p-8 text-center text-muted-c">Loading...</div>
           ) : payouts.length === 0 ? (
             <div className="text-center py-12 text-muted-c">
               <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-medium text-base mb-1">No payouts yet</p>
+              <p className="font-medium text-[var(--color-text-primary)] mb-1">No payouts yet</p>
               <p className="text-sm">Start selling to accumulate earnings, then withdraw.</p>
             </div>
           ) : (
@@ -181,8 +178,8 @@ export default function PaymentsPage() {
                 <tbody>
                   {payouts.map((p) => (
                     <tr key={p.id as string}>
-                      <td className="pl-5"><span className="text-sm font-bold text-base">{formatCurrency(Number(p.amount))}</span></td>
-                      <td><span className="text-sm text-base capitalize">{p.payout_method as string}</span></td>
+                      <td className="pl-5"><span className="text-sm font-bold text-[var(--color-text-primary)]">{formatCurrency(Number(p.amount))}</span></td>
+                      <td><span className="text-sm text-[var(--color-text-primary)] capitalize">{p.payout_method as string}</span></td>
                       <td><span className="text-sm text-muted-c">{p.payout_account as string ?? "—"}</span></td>
                       <td className="text-center">
                         <Badge variant={p.status === "paid" ? "success" : p.status === "pending" ? "warning" : "secondary"}>

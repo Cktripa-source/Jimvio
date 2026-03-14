@@ -148,8 +148,8 @@ export default function VendorSetupPage() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-base flex items-center gap-2">
-            <Store className="h-6 w-6 text-primary-700 dark:text-primary-300" />
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+            <Store className="h-6 w-6 text-[var(--color-accent)]" />
             Set Up Your Vendor Store
           </h1>
           <p className="text-sm text-muted-c">Fill in your business details to start selling on Jimvio</p>
@@ -161,14 +161,13 @@ export default function VendorSetupPage() {
         {STEPS.map((s, i) => (
           <React.Fragment key={s.id}>
             <div
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 step === s.id
-                  ? "text-white shadow-primary"
+                  ? "bg-[var(--color-accent)] text-white shadow-primary"
                   : step > s.id
                   ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
                   : "bg-subtle text-muted-c"
               }`}
-              style={step === s.id ? { background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" } : undefined}
             >
               {step > s.id ? <CheckCircle className="h-3.5 w-3.5" /> : s.icon}
               <span className="hidden sm:inline">{s.label}</span>
@@ -182,9 +181,9 @@ export default function VendorSetupPage() {
 
       {/* Step 1: Business Info */}
       {step === 1 && (
-        <div className="bg-surface rounded-2xl border border-base shadow-card p-6 space-y-5">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-card p-5 space-y-4">
           <div>
-            <h2 className="text-lg font-bold text-base mb-1">Business Information</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">Business Information</h2>
             <p className="text-sm text-muted-c">Tell customers about your store</p>
           </div>
           <Input
@@ -195,9 +194,9 @@ export default function VendorSetupPage() {
             required
           />
           <div>
-            <label className="text-sm font-medium text-base block mb-1.5">Store URL (Slug) *</label>
+            <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Store URL (Slug) *</label>
             <div className="flex items-center gap-2">
-              <div className="text-sm text-muted-c bg-subtle border border-r-0 border-base px-3 h-11 flex items-center rounded-l-xl shrink-0">
+              <div className="text-sm text-muted-c bg-subtle border border-r-0 border-base px-3 h-10 flex items-center rounded-l-lg shrink-0">
                 jimvio.com/vendors/
               </div>
               <input
@@ -205,7 +204,7 @@ export default function VendorSetupPage() {
                 onChange={e => { updateField("business_slug", e.target.value); setSlugAvailable(null); }}
                 onBlur={e => checkSlug(e.target.value)}
                 placeholder="your-store-name"
-                className="flex-1 h-11 px-3 border border-base bg-subtle text-sm text-base placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 rounded-r-xl transition-all min-w-0"
+                className="flex-1 h-10 px-3 border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] placeholder:text-muted-c focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)] rounded-r-lg transition-all min-w-0"
               />
             </div>
             {checkingSlug && <p className="text-xs text-muted-c mt-1 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Checking availability...</p>}
@@ -220,11 +219,11 @@ export default function VendorSetupPage() {
             className="min-h-[100px]"
           />
           <div>
-            <label className="text-sm font-medium text-base block mb-1.5">Country</label>
+            <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Country</label>
             <select
               value={form.business_country}
               onChange={e => updateField("business_country", e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+              className="w-full h-10 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 transition-all"
             >
               <option value="RW">🇷🇼 Rwanda</option>
               <option value="KE">🇰🇪 Kenya</option>
@@ -244,9 +243,9 @@ export default function VendorSetupPage() {
 
       {/* Step 2: Contact */}
       {step === 2 && (
-        <div className="bg-surface rounded-2xl border border-base shadow-card p-6 space-y-5">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-card p-5 space-y-4">
           <div>
-            <h2 className="text-lg font-bold text-base mb-1">Contact & Location</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">Contact & Location</h2>
             <p className="text-sm text-muted-c">How customers and Jimvio can reach you</p>
           </div>
           <Input
@@ -286,14 +285,14 @@ export default function VendorSetupPage() {
 
       {/* Step 3: Commission & Payouts */}
       {step === 3 && (
-        <div className="bg-surface rounded-2xl border border-base shadow-card p-6 space-y-5">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-card p-5 space-y-4">
           <div>
-            <h2 className="text-lg font-bold text-base mb-1">Payouts & Affiliate Settings</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">Payouts & Affiliate Settings</h2>
             <p className="text-sm text-muted-c">Configure how you get paid and how affiliates earn</p>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-base block mb-1.5">Payout Method</label>
+            <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Payout Method</label>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { value: "irembopay", label: "Irembopay",     icon: "💳", desc: "Fast mobile money payouts" },
@@ -304,14 +303,14 @@ export default function VendorSetupPage() {
                 <div
                   key={m.value}
                   onClick={() => updateField("payout_method", m.value)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
                     form.payout_method === m.value
-                      ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
-                      : "border-base hover:border-primary-300 hover:bg-subtle"
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent-light)]"
+                      : "border-base hover:border-[var(--color-border-strong)] hover:bg-subtle"
                   }`}
                 >
                   <span className="text-xl">{m.icon}</span>
-                  <p className="text-sm font-semibold text-base mt-1">{m.label}</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)] mt-1">{m.label}</p>
                   <p className="text-xs text-muted-c">{m.desc}</p>
                 </div>
               ))}
@@ -328,14 +327,14 @@ export default function VendorSetupPage() {
 
           <div className="h-px bg-border-base" />
 
-          <div className="flex items-center justify-between p-3.5 bg-subtle rounded-xl border border-base">
+          <div className="flex items-center justify-between p-3 bg-subtle rounded-lg border border-base">
             <div>
-              <p className="text-sm font-medium text-base">Enable Affiliate Marketing</p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">Enable Affiliate Marketing</p>
               <p className="text-xs text-muted-c mt-0.5">Let affiliates earn commissions promoting your products</p>
             </div>
             <label className="cursor-pointer">
               <input type="checkbox" className="sr-only" checked={form.affiliate_enabled} onChange={e => updateField("affiliate_enabled", e.target.checked)} />
-              <div className={`w-11 h-6 rounded-full transition-colors ${form.affiliate_enabled ? "bg-primary-600" : "bg-muted"}`}>
+              <div className={`w-11 h-6 rounded-full transition-colors ${form.affiliate_enabled ? "bg-[var(--color-accent)]" : "bg-[var(--color-surface-secondary)]"}`}>
                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm m-1 transition-transform ${form.affiliate_enabled ? "translate-x-5" : "translate-x-0"}`} />
               </div>
             </label>
@@ -357,9 +356,9 @@ export default function VendorSetupPage() {
 
       {/* Step 4: Review */}
       {step === 4 && (
-        <div className="bg-surface rounded-2xl border border-base shadow-card p-6 space-y-5">
+        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] shadow-card p-5 space-y-4">
           <div>
-            <h2 className="text-lg font-bold text-base mb-1">Review Your Store</h2>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">Review Your Store</h2>
             <p className="text-sm text-muted-c">Confirm your details before going live</p>
           </div>
 
@@ -373,22 +372,22 @@ export default function VendorSetupPage() {
               { label: "Payout",         value: `${form.payout_method} — ${form.payout_account}`, icon: <FileText className="h-4 w-4" /> },
               { label: "Affiliate",      value: form.affiliate_enabled ? `Enabled (${form.affiliate_commission_rate}% default)` : "Disabled", icon: <Zap className="h-4 w-4" /> },
             ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 bg-subtle rounded-xl">
-                <div className="p-1.5 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shrink-0">
+              <div key={i} className="flex items-start gap-3 p-3 bg-subtle rounded-lg">
+                <div className="p-1.5 rounded-lg bg-[var(--color-accent-light)] text-[var(--color-accent)] shrink-0">
                   {item.icon}
                 </div>
                 <div>
                   <p className="text-xs text-muted-c">{item.label}</p>
-                  <p className="text-sm font-medium text-base">{item.value}</p>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{item.value}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {form.business_description && (
-            <div className="p-3 bg-subtle rounded-xl border border-base">
+            <div className="p-3 bg-subtle rounded-lg border border-base">
               <p className="text-xs text-muted-c mb-1">Description</p>
-              <p className="text-sm text-base">{form.business_description}</p>
+              <p className="text-sm text-[var(--color-text-primary)]">{form.business_description}</p>
             </div>
           )}
 

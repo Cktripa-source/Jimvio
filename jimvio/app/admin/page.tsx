@@ -43,10 +43,10 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-base">Admin Dashboard</h1>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Admin Dashboard</h1>
           <p className="text-sm text-muted-c mt-0.5">Platform overview and management</p>
         </div>
         <Badge variant="destructive" className="px-3 py-1.5">
@@ -63,20 +63,20 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Products Listed"  value={stats.totalProducts.toLocaleString()}     change={5.2}  icon={<Package     className="h-4 w-4" />} iconColor="from-blue-600 to-cyan-600" />
-        <StatCard title="Orders (30d)"     value={stats.totalOrders.toLocaleString()}        change={18.9} icon={<ShoppingCart className="h-4 w-4" />} iconColor="from-purple-600 to-brand-600" />
+        <StatCard title="Orders (30d)"     value={stats.totalOrders.toLocaleString()}        change={18.9} icon={<ShoppingCart className="h-4 w-4" />} iconColor="from-primary-600 to-accent-600" />
         <StatCard title="Fraud Flags"      value="0"                                         change={-42.1}icon={<Ban         className="h-4 w-4" />} iconColor="from-red-700 to-red-600" />
         <StatCard title="Platform Health"  value="99.9%"                                     change={0.1}  icon={<TrendingUp  className="h-4 w-4" />} iconColor="from-emerald-600 to-green-600" />
       </div>
 
       <Card>
-        <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Platform Revenue — 12 Months</CardTitle></CardHeader>
-        <CardContent className="px-5 pb-5 pt-0"><RevenueChart height={260} /></CardContent>
+        <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Platform Revenue — 12 Months</CardTitle></CardHeader>
+        <CardContent className="px-4 pb-4 pt-0"><RevenueChart height={260} /></CardContent>
       </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* Pending Verifications */}
         <Card>
-          <CardHeader className="pt-5 px-5 pb-4">
+          <CardHeader className="pt-4 px-4 pb-3">
             <div className="flex items-center justify-between">
               <CardTitle>Pending Verifications</CardTitle>
               <Badge variant={pendingVendors.length > 0 ? "warning" : "success"}>
@@ -84,21 +84,21 @@ export default function AdminPage() {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="px-5 pb-5 pt-0 space-y-2">
+          <CardContent className="px-4 pb-4 pt-0 space-y-2">
             {pendingVendors.length === 0 ? (
               <div className="text-center py-8 text-muted-c">
                 <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                <p className="text-sm font-medium text-base">All caught up!</p>
+                <p className="text-sm font-medium text-[var(--color-text-primary)]">All caught up!</p>
                 <p className="text-xs">No pending vendor verifications.</p>
               </div>
             ) : (
               pendingVendors.map((v: Record<string, unknown>, i: number) => {
                 const prof = v.profiles as Record<string, unknown> | null;
                 return (
-                  <div key={v.id as string} className="flex items-center gap-3 p-3 rounded-xl hover:bg-subtle transition-all">
-                    <div className="w-10 h-10 rounded-xl bg-subtle border border-base flex items-center justify-center text-xl shrink-0">🏪</div>
+                  <div key={v.id as string} className="flex items-center gap-3 p-3 rounded-lg hover:bg-subtle transition-all">
+                    <div className="w-10 h-10 rounded-lg bg-subtle border border-base flex items-center justify-center text-xl shrink-0">🏪</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-base">{v.business_name as string}</p>
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">{v.business_name as string}</p>
                       <p className="text-xs text-muted-c">{prof?.email as string ?? "—"} · {v.business_country as string}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
@@ -118,12 +118,12 @@ export default function AdminPage() {
 
         {/* Platform Summary */}
         <Card>
-          <CardHeader className="pt-5 px-5 pb-4"><CardTitle>Platform Summary</CardTitle></CardHeader>
-          <CardContent className="px-5 pb-5 pt-0">
-            <div className="grid grid-cols-2 gap-4">
+          <CardHeader className="pt-4 px-4 pb-3"><CardTitle>Platform Summary</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-4 pt-0">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "Buyers",       count: Math.max(0, stats.totalUsers - stats.activeVendors), color: "bg-blue-50 dark:bg-blue-900/30 text-blue-600" },
-                { label: "Vendors",      count: stats.activeVendors,  color: "bg-primary-50 dark:bg-primary-900/30 text-primary-700" },
+                { label: "Vendors",      count: stats.activeVendors,  color: "bg-[var(--color-accent-light)] text-[var(--color-accent)]" },
                 { label: "Products",     count: stats.totalProducts,  color: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700" },
                 { label: "Orders (30d)", count: stats.totalOrders,    color: "bg-amber-50 dark:bg-amber-900/30 text-amber-700" },
               ].map((r, i) => (

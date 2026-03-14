@@ -15,6 +15,7 @@ export default function ViralClipsPage() {
   const [clips, setClips]         = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading]     = useState(true);
   const [vendor, setVendor]       = useState<Record<string, unknown> | null>(null);
+  const [influencer, setInfluencer] = useState<Record<string, unknown> | null>(null);
   const [products, setProducts]   = useState<Record<string, unknown>[]>([]);
   const [showForm, setShowForm]   = useState(false);
   const [creating, setCreating]   = useState(false);
@@ -26,13 +27,24 @@ export default function ViralClipsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: vend } = await supabase.from("vendors").select("*").eq("user_id", user.id).single();
-      setVendor(vend);
+      const [vendRes, infRes] = await Promise.all([
+        supabase.from("vendors").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("influencers").select("*").eq("user_id", user.id).maybeSingle(),
+      ]);
 
-      if (vend) {
+      const vend = vendRes.data;
+      const inf  = infRes.data;
+      setVendor(vend);
+      setInfluencer(inf);
+
+      if (vend || inf) {
+        const query = supabase.from("viral_clips").select("*").order("created_at", { ascending: false });
+        if (vend) query.eq("vendor_id", vend.id);
+        else if (inf) query.eq("influencer_id", inf.id);
+
         const [clipsRes, prodsRes] = await Promise.all([
-          supabase.from("viral_clips").select("*").eq("vendor_id", vend.id).order("created_at", { ascending: false }),
-          supabase.from("products").select("id, name").eq("vendor_id", vend.id).eq("is_active", true).limit(20),
+          query,
+          supabase.from("products").select("id, name, vendor_id").eq("is_active", true).limit(100),
         ]);
         setClips(clipsRes.data ?? []);
         setProducts(prodsRes.data ?? []);
@@ -43,17 +55,33 @@ export default function ViralClipsPage() {
   }, []);
 
   async function createClip() {
-    if (!vendor || !form.title || !form.video_url) return;
+    if ((!vendor && !influencer) || !form.title || !form.video_url) return;
     setCreating(true);
     const supabase = createClient();
-    const { data, error } = await supabase.from("viral_clips").insert({
-      vendor_id:   vendor.id,
+    const insertData: any = {
       title:       form.title,
       description: form.description || null,
       video_url:   form.video_url,
       product_id:  form.product_id || null,
       is_active:   true,
-    }).select().single();
+    };
+
+    if (vendor) {
+      insertData.vendor_id = vendor.id;
+    } else if (influencer && form.product_id) {
+      const selectedProd = products.find(p => p.id === form.product_id);
+      if (selectedProd) {
+        insertData.vendor_id = selectedProd.vendor_id;
+      }
+    }
+
+    if (influencer) insertData.influencer_id = influencer.id;
+
+    const { data, error } = await supabase.from("viral_clips").insert(insertData).select().single();
+
+    if (error) {
+      console.error("Supabase Error details:", error.message, error.details, error.hint);
+    }
 
     if (!error && data) {
       setClips(prev => [data, ...prev]);
@@ -74,24 +102,25 @@ export default function ViralClipsPage() {
   const totalDownloads = clips.reduce((s, c) => s + (c.total_downloads as number ?? 0), 0);
   const totalConvs     = clips.reduce((s, c) => s + (c.total_conversions as number ?? 0), 0);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent)]" /></div>;
 
-  if (!vendor) return (
+  if (!vendor && !influencer) return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-base">Viral Clips</h1>
-      <div className="bg-subtle border border-base rounded-2xl p-10 text-center">
+      <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Viral Clips</h1>
+      <div className="bg-subtle border border-base rounded-xl p-8 text-center">
         <div className="text-4xl mb-3">🎬</div>
-        <h3 className="text-lg font-bold text-base mb-2">Activate Vendor Role First</h3>
-        <Button asChild><Link href="/dashboard/roles">Activate Vendor Role</Link></Button>
+        <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">Activate Creator Role First</h3>
+        <p className="text-sm text-muted-c mb-4">You need to be a Vendor or an Influencer to upload clips.</p>
+        <Button asChild><Link href="/dashboard/roles">Activate Roles</Link></Button>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-base">Viral Clips</h1>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Viral Clips</h1>
           <p className="text-sm text-muted-c mt-0.5">Upload marketing videos for influencers to share</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
@@ -99,7 +128,7 @@ export default function ViralClipsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total Views"     value={totalViews.toLocaleString()}     icon={<Eye        className="h-4 w-4" />} iconColor="from-cyan-600 to-blue-600" />
         <StatCard title="Total Shares"    value={totalShares.toLocaleString()}    icon={<Share2     className="h-4 w-4" />} iconColor="from-pink-600 to-rose-600" />
         <StatCard title="Downloads"       value={totalDownloads.toLocaleString()} icon={<Download   className="h-4 w-4" />} iconColor="from-emerald-600 to-teal-600" />
@@ -120,9 +149,9 @@ export default function ViralClipsPage() {
             <Input label="Description" placeholder="Brief description for influencers" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             <Input label="Video URL *" type="url" placeholder="https://res.cloudinary.com/... or YouTube/Vimeo URL" value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} hint="Paste a direct video URL (Cloudinary, YouTube, Vimeo)" />
             <div>
-              <label className="text-sm font-medium text-base block mb-1.5">Link to Product (optional)</label>
+              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-1.5">Link to Product (optional)</label>
               <select value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))}
-                className="w-full h-11 px-3.5 rounded-xl border border-base bg-subtle text-sm text-base focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all">
+                className="w-full h-10 px-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 transition-all">
                 <option value="">No product linked</option>
                 {products.map(p => <option key={p.id as string} value={p.id as string}>{p.name as string}</option>)}
               </select>
@@ -143,7 +172,7 @@ export default function ViralClipsPage() {
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform text-white" style={{ background: "linear-gradient(135deg, #4B2D8F, #7C3AED)" }}>
             <Video className="h-7 w-7" />
           </div>
-          <h3 className="text-base font-bold text-base mb-2">Upload Your First Marketing Clip</h3>
+          <h3 className="text-base font-bold mb-2">Upload Your First Marketing Clip</h3>
           <p className="text-sm text-muted-c mb-4 max-w-md mx-auto">Upload a short marketing video. Influencers download and share it on TikTok, Instagram, and YouTube. Track every view and conversion.</p>
           <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4" /> Upload First Clip</Button>
           <p className="text-muted-c text-xs mt-3">Supports any video URL (Cloudinary, YouTube, Vimeo)</p>
@@ -177,7 +206,7 @@ export default function ViralClipsPage() {
               </div>
 
               <CardContent className="p-4">
-                <p className="text-sm font-medium text-base mb-3 line-clamp-2">{clip.title as string}</p>
+                <p className="text-sm font-medium mb-3 line-clamp-2">{clip.title as string}</p>
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {[
                     { label: "Shares",    value: (clip.total_shares as number ?? 0).toLocaleString(),    icon: "📤" },
@@ -187,7 +216,7 @@ export default function ViralClipsPage() {
                   ].map((s, i) => (
                     <div key={i} className="bg-subtle rounded-lg p-2 text-center">
                       <div className="text-xs mb-0.5">{s.icon}</div>
-                      <div className="text-xs font-bold text-base">{s.value}</div>
+                      <div className="text-xs font-bold">{s.value}</div>
                       <div className="text-xs text-muted-c">{s.label}</div>
                     </div>
                   ))}
