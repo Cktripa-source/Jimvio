@@ -28,3 +28,9 @@ next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local scratch / accidental exports (do not commit)
+Untitled
+build_log.txt
+build_output.txt
+final_build_log.txt
