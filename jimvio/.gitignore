@@ -31,6 +31,9 @@ yarn-error.log*
 
 # Local scratch / accidental exports (do not commit)
 Untitled
+Untitled*
 build_log.txt
 build_output.txt
 final_build_log.txt
+*.tmp
+Thumbs.db
